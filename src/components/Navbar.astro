@@ -1,0 +1,38 @@
+---
+const pathname = new URL(Astro.request.url).pathname;
+const currentPath = pathname.slice(1); // menghapus "/"
+
+const navLinks = [
+  { name: 'Beranda', href: '/' },
+  { name: 'Komunitas', href: '/komunitas' },
+  { name: 'Kader', href: '/kader' },
+  { name: 'Kegiatan', href: '/kegiatan' },
+  { name: 'Berita', href: '/berita' },
+];
+---
+
+<nav class="bg-white/90 backdrop-blur-md border-b border-green-100 py-4 px-6 sticky top-0 z-50 shadow-sm">
+  <div class="max-w-7xl mx-auto flex justify-between items-center">
+    <div class="flex items-center gap-3">
+        <img src="/images/logo-aman.png" alt="Logo" class="h-10 w-auto" />
+        <a href="/" class="text-xl font-bold text-green-800 tracking-tight">AMAN <span class="text-green-500">Mentawai</span></a>
+    </div>
+
+    <ul class="flex gap-8">
+      {navLinks.map((link) => (
+        <li>
+          <a 
+            href={link.href} 
+            class={`text-sm font-semibold transition-all duration-300 hover:text-green-600 ${
+              (link.href === '/' && currentPath === '') || (currentPath === link.href.slice(1)) 
+              ? 'text-green-600 border-b-2 border-green-600 pb-1' 
+              : 'text-slate-600'
+            }`}
+          >
+            {link.name}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</nav>
