@@ -9,47 +9,236 @@ import MainLayout from '../layouts/MainLayout.astro';
       class="absolute inset-0 w-full h-full object-cover"
       alt="Masyarakat Adat Mentawai"
     />
-    <div class="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-center px-12">
+    <div class="absolute inset-0 bg-gradient-to-r from-black/75 to-transparent flex items-center px-8 md:px-16">
       <div class="max-w-2xl text-white">
-        <h1 class="text-6xl font-bold mb-6 leading-tight">AMAN <span class="text-green-400">Mentawai</span></h1>
-        <p class="text-xl text-slate-200 mb-8 leading-relaxed">
-          Aliansi Masyarakat Adat Nusantara. Berjuang untuk kedaulatan politik, kemandirian ekonomi, dan martabat budaya masyarakat adat Mentawai.
+        <span class="bg-green-500/20 text-green-300 border border-green-500/30 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4 inline-block">
+          Aliansi Masyarakat Adat Nusantara
+        </span>
+        <h1 class="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
+          AMAN <span class="text-green-400">Mentawai</span>
+        </h1>
+        <p class="text-lg md:text-xl text-slate-200 mb-8 leading-relaxed">
+          Berjuang bersama untuk mewujudkan kedaulatan politik, kemandirian ekonomi, dan martabat budaya masyarakat adat di Kepulauan Mentawai.
         </p>
-        <div class="flex gap-4">
-            <a href="/profil" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full font-bold transition">Profile</a>
-            <a href="/dokumen" class="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/40 px-8 py-3 rounded-full font-bold transition">Dokumen</a>
+        <div class="flex flex-wrap gap-4">
+            <a href="#tentang-kami" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3.5 rounded-full font-bold transition-all shadow-lg shadow-green-600/30">
+              Tentang Kami
+            </a>
+            <a href="/kegiatan" class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-8 py-3.5 rounded-full font-bold transition-all">
+              Lihat Kegiatan
+            </a>
         </div>
       </div>
     </div>
   </section>
 
-  <div class="grid md:grid-cols-3 gap-8 mb-20">
-    <div class="md:col-span-2 space-y-6">
-        <h2 class="text-3xl font-bold text-slate-800 flex items-center gap-2">
-            <span class="w-2 h-8 bg-green-500 rounded-full"></span>
-            Tentang Kami
+  <section id="tentang-kami" class="grid md:grid-cols-2 gap-12 items-center mb-20 scroll-mt-24">
+    <div class="space-y-6">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-8 bg-green-500 rounded-full"></span>
+        <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Tentang Kami</h2>
+      </div>
+      <p class="text-lg text-slate-600 leading-relaxed text-justify">
+        Aliansi Masyarakat Adat Nusantara (AMAN) Wilayah Mentawai berdedikasi penuh untuk melakukan pendampingan, penguatan kapasitas kader, serta pengakuan dan perlindungan wilayah adat. Kami bergerak bersama komunitas lokal untuk memastikan hak-hak tradisional tetap lestari.
+      </p>
+      <p class="text-lg text-slate-600 leading-relaxed text-justify">
+        Melalui visi besar mandiri secara ekonomi dan bermartabat secara budaya, AMAN Mentawai terus menjadi benteng pertahanan bagi kearifan lokal Uma, tata ruang adat, dan kelestarian alam hutan bumi Sikerei dari gerusan zaman.
+      </p>
+    </div>
+    <div class="relative group">
+      <div class="absolute inset-0 bg-green-600 rounded-3xl rotate-3 scale-95 opacity-20 group-hover:rotate-1 transition-transform duration-300"></div>
+      <img 
+        src="/images/kantor.jpg" 
+        alt="Kantor AMAN Mentawai" 
+        class="relative rounded-3xl object-cover w-full h-[350px] shadow-lg border border-slate-100"
+      />
+    </div>
+  </section>
+
+  <section class="grid md:grid-cols-3 gap-8 mb-24">
+    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+      <div>
+        <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-6 font-bold text-xl">👥</div>
+        <h3 class="text-xl font-bold text-slate-800 mb-2">Kader Penggerak</h3>
+        <p class="text-slate-500 text-sm mb-6">Generasi muda dan tokoh adat yang dilatih untuk memimpin pergerakan di tingkat komunitas.</p>
+      </div>
+      <div class="flex items-center justify-between border-t border-slate-50 pt-4">
+        <span class="text-3xl font-black text-green-700">50+ <span class="text-sm font-medium text-slate-400">Jiwa</span></span>
+        <a href="/kader" class="text-sm font-bold text-green-600 hover:text-green-700 inline-flex items-center gap-1 group">
+          Detail Kader <span class="group-hover:translate-x-1 transition-transform">→</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+      <div>
+        <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-6 font-bold text-xl">🏡</div>
+        <h3 class="text-xl font-bold text-slate-800 mb-2">Komunitas Adat</h3>
+        <p class="text-slate-500 text-sm mb-6">Wilayah persebaran komunitas adat Mentawai yang telah terpetakan dan berdaulat.</p>
+      </div>
+      <div class="flex items-center justify-between border-t border-slate-50 pt-4">
+        <span class="text-3xl font-black text-green-700">10+ <span class="text-sm font-medium text-slate-400">Wilayah</span></span>
+        <a href="/komunitas" class="text-sm font-bold text-green-600 hover:text-green-700 inline-flex items-center gap-1 group">
+          Jelajahi <span class="group-hover:translate-x-1 transition-transform">→</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+      <div>
+        <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-6 font-bold text-xl">📰</div>
+        <h3 class="text-xl font-bold text-slate-800 mb-2">Kabar Terkini</h3>
+        <p class="text-slate-500 text-sm mb-6">Informasi, advokasi kebijakan, dan rilis pers resmi seputar isu adat di Kepulauan Mentawai.</p>
+      </div>
+      <div class="flex items-center justify-between border-t border-slate-50 pt-4">
+        <span class="text-sm font-medium text-slate-400">Update berkala</span>
+        <a href="/berita" class="text-sm font-bold text-green-600 hover:text-green-700 inline-flex items-center gap-1 group">
+          Baca Berita <span class="group-hover:translate-x-1 transition-transform">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white p-8 md:p-12 rounded-3xl border border-slate-100 shadow-sm mb-24">
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
+      <div>
+        <h2 class="text-3xl font-extrabold text-slate-900 flex items-center gap-2">
+          <span class="w-2 h-8 bg-green-500 rounded-full"></span>
+          Agenda & Kegiatan Terbaru
         </h2>
-        <p class="text-lg text-slate-600 leading-relaxed">
-            Mewujudkan masyarakat adat Mentawai yang berdaulat secara politik, mandiri secara ekonomi, dan bermartabat secara budaya. Kami terus melakukan pendampingan komunitas, penguatan kader, dan perlindungan wilayah adat.
-        </p>
+        <p class="text-slate-500 mt-1">Aktivitas riil AMAN Mentawai di lapangan bersama masyarakat adat.</p>
+      </div>
+      <a href="/kegiatan" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-3 rounded-full text-sm transition-all text-center">
+        Semua Kegiatan
+      </a>
     </div>
 
-    <div class="bg-green-800 rounded-3xl p-8 text-white flex flex-col justify-center shadow-xl">
-        <div class="text-4xl font-bold mb-2">10+</div>
-        <div class="text-green-300 font-medium">Komunitas Adat Terdaftar</div>
-    </div>
-  </div>
-
-  <section class="grid md:grid-cols-3 gap-6">
-    <div class="group bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-green-200 transition-all cursor-pointer">
-        <div class="w-12 h-12 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-green-600 group-hover:text-white transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="flex flex-col justify-between h-full bg-slate-50 p-6 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg hover:border-green-100 transition-all">
+        <div>
+          <span class="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-4">Pemetaan Adat</span>
+          <h3 class="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-green-700 transition-colors">Pemetaan Partisipatif Wilayah Adat di Saureinu</h3>
+          <p class="text-slate-500 text-sm mb-4 line-clamp-3">Melakukan pelacakan tata batas wilayah adat bersama para tetua adat guna pendaftaran wilayah hukum adat ke pemerintah daerah.</p>
         </div>
-        <h3 class="text-xl font-bold text-slate-800 mb-3">Pendidikan Adat</h3>
-        <p class="text-slate-500">Mentransfer kearifan lokal Mentawai kepada generasi muda agar tidak punah ditelan zaman.</p>
+        <a href="/kegiatan/pemetaan-partisipatif-siberut" class="text-sm font-bold text-green-600 hover:underline inline-flex items-center gap-1 mt-4">
+          Baca Selengkapnya <span>→</span>
+        </a>
+      </div>
+
+      <div class="flex flex-col justify-between h-full bg-slate-50 p-6 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg hover:border-green-100 transition-all">
+        <div>
+          <span class="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-4">Sekolah Adat</span>
+          <h3 class="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-green-700 transition-colors">Sekolah Adat: Belajar Arat Sabulungan untuk Pemuda</h3>
+          <p class="text-slate-500 text-sm mb-4 line-clamp-3">Mengajarkan kembali nilai-nilai luhur kepercayaan tradisi, seni pembuatan tato, pengobatan herbal obat tradisional Sikerei.</p>
+        </div>
+        <a href="/kegiatan/sekolah-adat-silaoinan" class="text-sm font-bold text-green-600 hover:underline inline-flex items-center gap-1 mt-4">
+          Baca Selengkapnya <span>→</span>
+        </a>
+      </div>
+
+      <div class="flex flex-col justify-between h-full bg-slate-50 p-6 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg hover:border-green-100 transition-all">
+        <div>
+          <span class="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-4">Pemberdayaan</span>
+          <h3 class="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-green-700 transition-colors">Pelatihan Pembuatan Kerajinan Rotan Ekonomis bagi Ibu-Ibu</h3>
+          <p class="text-slate-500 text-sm mb-4 line-clamp-3">Mendorong kemandirian ekonomi keluarga melalui pemanfaatan hasil hutan non-kayu berupa kerajinan tangan bernilai jual tinggi.</p>
+        </div>
+        <a href="/kegiatan/pelatihan-kerajinan-rotan" class="text-sm font-bold text-green-600 hover:underline inline-flex items-center gap-1 mt-4">
+          Baca Selengkapnya <span>→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-24">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-extrabold text-slate-900">Suara Masyarakat Adat</h2>
+      <p class="text-slate-500 mt-2 max-w-xl mx-auto">Dampak nyata dan harapan yang dirasakan langsung oleh masyarakat adat di tapak pergerakan.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
+        <span class="text-6xl text-slate-100 font-serif absolute top-4 left-4 pointer-events-none">“</span>
+        <p class="text-slate-600 italic relative z-10 mb-6">
+          "Dengan adanya pendampingan pemetaan wilayah adat dari AMAN, batas tanah suku kami sekarang jadi jelas dan terlindungi secara hukum dari klaim sepihak pihak luar."
+        </p>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white font-bold text-sm">A</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm">Sababalat</h4>
+            <p class="text-xs text-slate-400">Kepala Suku / Tetua Adat Saureinu</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
+        <span class="text-6xl text-slate-100 font-serif absolute top-4 left-4 pointer-events-none">“</span>
+        <p class="text-slate-600 italic relative z-10 mb-6">
+          "Melalui sekolah adat yang didirikan AMAN, anak-anak kami tidak lagi malu mempraktikkan budaya Mentawai. Mereka bangga menjadi bagian dari generasi Sikerei."
+        </p>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white font-bold text-sm">B</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm">Sakerebau</h4>
+            <p class="text-xs text-slate-400">Ibu Rumah Tangga / Pengrajin</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
+        <span class="text-6xl text-slate-100 font-serif absolute top-4 left-4 pointer-events-none">“</span>
+        <p class="text-slate-600 italic relative z-10 mb-6">
+          "Saya belajar banyak tentang advokasi hukum dan kepemimpinan di pelatihan kader AMAN. Kini saya siap pulang untuk membangun kampung halaman saya sendiri."
+        </p>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white font-bold text-sm">S</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm">Siritoitet</h4>
+            <p class="text-xs text-slate-400">Kader Muda Komunitas Sipora</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-green-800 rounded-[2.5rem] text-white overflow-hidden shadow-xl grid md:grid-cols-2">
+    <div class="p-8 md:p-12 flex flex-col justify-center space-y-6">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-green-300 bg-green-900/50 border border-green-700 px-3 py-1 rounded-full">Kontak Kami</span>
+        <h2 class="text-3xl font-extrabold mt-3 tracking-tight">Mari Terhubung Bersama Kami</h2>
+        <p class="text-green-100/80 text-sm mt-1">Punya pertanyaan atau ingin berkolaborasi? Silakan hubungi kantor sekretariat kami.</p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-start gap-4">
+          <div class="w-8 h-8 rounded-lg bg-green-700 flex items-center justify-center shrink-0">📍</div>
+          <div>
+            <h4 class="font-bold text-sm text-green-300">Alamat Kantor</h4>
+            <p class="text-sm text-green-50 text-justify leading-relaxed">Jalan Raya Tuapejat Km. 2, Sipora Utara, Kab. Kep. Mentawai, Sumatera Barat</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4">
+          <div class="w-8 h-8 rounded-lg bg-green-700 flex items-center justify-center shrink-0">✉️</div>
+          <div>
+            <h4 class="font-bold text-sm text-green-300">Email Resmi</h4>
+            <p class="text-sm text-green-50">info@amanmentawai.or.id</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4">
+          <div class="w-8 h-8 rounded-lg bg-green-700 flex items-center justify-center shrink-0">📞</div>
+          <div>
+            <h4 class="font-bold text-sm text-green-300">Nomor Telepon</h4>
+            <p class="text-sm text-green-50">0800-0000-0000</p>
+          </div>
+        </div>
+      </div>
     </div>
     
-    </section>
+    <div class="h-64 md:h-full min-h-[300px] relative">
+      <img 
+        src="/images/peta.jpg" 
+        alt="Peta Lokasi AMAN Mentawai" 
+        class="absolute inset-0 w-full h-full object-cover grayscale-[20%] contrast-[110%] hover:grayscale-0 transition-all duration-500"
+      />
+    </div>
+  </section>
 </MainLayout>
