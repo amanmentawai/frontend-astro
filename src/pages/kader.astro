@@ -1,0 +1,249 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+
+// Data Lengkap Kader (Siap dihubungkan ke Directus nantinya)
+const daftarKader = [
+  { id: 1, nama: "Samangilailai", usia: 26, komunitas: "Sipora", jabatan: "Kader Pemuda Adat", bergabung: 2022, foto: "/images/hero-mentawai.jpg", bio: "Fokus pada pemetaan wilayah adat menggunakan drone dan advokasi pemuda di Sipora Utara." },
+  { id: 2, nama: "Sakerebau", usia: 34, komunitas: "Siberut", jabatan: "Penggerak Perempuan", bergabung: 2020, foto: "/images/kantor.jpg", bio: "Aktif menghidupkan kembali sekolah tenun tradisional dan kerajinan rotan untuk kemandirian ekonomi uma." },
+  { id: 3, nama: "Siritoitet", usia: 52, komunitas: "Pagai", jabatan: "Penasihat Adat", bergabung: 2018, foto: "/images/hero-mentawai.jpg", bio: "Tetua adat yang memimpin perundingan legalitas hutan adat dan penjaga tradisi Arat Sabulungan." },
+  { id: 4, nama: "Saogo", usia: 29, komunitas: "Siberut Selatan", jabatan: "Kader Pemetaan", bergabung: 2023, foto: "/images/kantor.jpg", bio: "Ahli dalam pemetaan partisipatif tata batas wilayah adat antarsuku di Siberut." },
+];
+
+// Mengambil list komunitas unik untuk isi otomatis dropdown secara dinamis
+const listKomunitas = [...new Set(daftarKader.map(kader => kader.komunitas))];
+---
+
+<MainLayout title="Direktori Kader | AMAN Mentawai">
+  <header class="mb-10">
+    <span class="text-xs font-bold uppercase tracking-widest text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-3">Database Internal</span>
+    <h1 class="text-4xl font-black text-slate-900 tracking-tight">Direktori Kader Penggerak</h1>
+    <p class="text-slate-500 mt-2 max-w-2xl">Kelola, cari, filter, dan lihat profil lengkap para pejuang masyarakat adat yang bergerak di berbagai wilayah Kepulauan Mentawai.</p>
+  </header>
+
+  <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm mb-6 space-y-4 lg:space-y-0 lg:flex lg:items-center lg:gap-4 justify-between">
+    
+    <div class="flex-grow">
+      <label for="search-nama" class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Cari Nama Kader</label>
+      <input
+        type="text"
+        id="search-nama"
+        placeholder="Ketik nama untuk mencari..."
+        class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-hidden focus:border-green-500 focus:bg-white transition-all shadow-inner"
+      />
+    </div>
+
+    <div class="w-full lg:w-64">
+      <label for="filter-komunitas" class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Filter Komunitas</label>
+      <select
+        id="filter-komunitas"
+        class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-hidden focus:border-green-500 focus:bg-white transition-all cursor-pointer font-medium text-slate-700"
+      >
+        <option value=""> Semua Komunitas</option>
+        {listKomunitas.map(komunitas => (
+          <option value={komunitas}> {komunitas}</option>
+        ))}
+      </select>
+    </div>
+
+    <div class="w-full lg:w-64">
+      <label for="sort-data" class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Urutan Data</label>
+      <select
+        id="sort-data"
+        class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-hidden focus:border-green-500 focus:bg-white transition-all cursor-pointer font-medium text-slate-700"
+      >
+        <option value=""> Default (Bawaan)</option>
+        <option value="nama-asc"> Nama (A → Z)</option>
+        <option value="nama-desc"> Nama (Z → A)</option>
+        <option value="usia-asc"> Usia (Muda → Tua)</option>
+        <option value="usia-desc"> Usia (Tua → Muda)</option>
+      </select>
+    </div>
+
+  </div>
+
+  <div class="bg-white rounded-3xl border border-slate-100 shadow-xs overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-50/70 border-b border-slate-100 text-slate-600 text-sm font-bold uppercase tracking-wider">
+            <th class="p-5">Nama</th>
+            <th class="p-5">Usia</th>
+            <th class="p-5">Komunitas</th>
+            <th class="p-5">Jabatan Tugas</th>
+            <th class="p-5 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          {daftarKader.map((kader) => (
+            <tr 
+              class="border-b border-slate-50 hover:bg-green-50/30 transition-colors duration-200 group table-row-item"
+              data-nama={kader.nama}
+              data-usia={kader.usia}
+              data-komunitas={kader.komunitas}
+              data-foto={kader.foto}
+              data-jabatan={kader.jabatan}
+              data-bergabung={kader.bergabung}
+              data-bio={kader.bio}
+            >
+              <td class="p-5 font-semibold text-slate-800">{kader.nama}</td>
+              <td class="p-5 text-slate-600 font-medium">{kader.usia} Tahun</td>
+              <td class="p-5">
+                <span class="bg-green-50 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full border border-green-100/50">
+                  {kader.komunitas}
+                </span>
+              </td>
+              <td class="p-5 text-slate-500 font-medium">{kader.jabatan}</td>
+              <td class="p-5 text-right">
+                <button class="btn-detail bg-slate-100 text-slate-700 hover:bg-green-600 hover:text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs">
+                  Lihat Selengkapnya
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    
+    <div id="no-data-message" class="hidden text-center py-12 text-slate-400 font-medium bg-slate-50/50">
+      🔍 Tidak ada data kader yang cocok dengan pencarian atau filter.
+    </div>
+  </div>
+
+  <div id="profile-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-xs transition-opacity duration-300">
+    <div class="bg-white rounded-[2rem] max-w-2xl w-full p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300">
+      <button id="close-modal" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 font-bold text-xl cursor-pointer bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">✕</button>
+      
+      <div class="grid md:grid-cols-3 gap-6 items-start mt-4">
+        <div class="md:col-span-1">
+          <img id="modal-foto" src="" alt="" class="w-full h-48 md:h-56 object-cover rounded-2xl shadow-sm border border-slate-100" />
+        </div>
+        <div class="md:col-span-2 space-y-4">
+          <div>
+            <h2 id="modal-nama" class="text-2xl font-black text-slate-900"></h2>
+            <p id="modal-jabatan" class="text-green-600 font-bold text-sm"></p>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl text-xs border border-slate-100">
+            <div>
+              <span class="text-slate-400 block mb-0.5">Asal Komunitas</span>
+              <span id="modal-komunitas" class="font-bold text-slate-800 text-sm"></span>
+            </div>
+            <div>
+              <span class="text-slate-400 block mb-0.5">Tahun Bergabung</span>
+              <span id="modal-bergabung" class="font-bold text-slate-800 text-sm"></span>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm mb-1">Riwayat Perjuangan:</h4>
+            <p id="modal-bio" class="text-slate-600 text-sm leading-relaxed text-justify"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</MainLayout>
+
+<script>
+  const searchInput = document.getElementById('search-nama') as HTMLInputElement;
+  const komunitasSelect = document.getElementById('filter-komunitas') as HTMLSelectElement;
+  const sortSelect = document.getElementById('sort-data') as HTMLSelectElement;
+  const tableBody = document.getElementById('table-body');
+  const noDataMessage = document.getElementById('no-data-message');
+  const modal = document.getElementById('profile-modal');
+  const closeModalBtn = document.getElementById('close-modal');
+  
+  let rows = Array.from(document.querySelectorAll('.table-row-item')) as HTMLElement[];
+
+  // 1. LOGIKA FILTER GABUNGAN (Nama & Komunitas)
+  function jalankanFilter() {
+    const nilaiCari = searchInput.value.toLowerCase().trim();
+    const nilaiKomunitas = komunitasSelect.value;
+    let adaDataDitampilkan = false;
+
+    rows.forEach(row => {
+      const namaKader = (row.dataset.nama || '').toLowerCase();
+      const komunitasKader = row.dataset.komunitas || '';
+
+      const cocokNama = namaKader.includes(nilaiCari);
+      const cocokKomunitas = nilaiKomunitas === '' || komunitasKader === nilaiKomunitas;
+
+      if (cocokNama && cocokKomunitas) {
+        row.classList.remove('hidden');
+        adaDataDitampilkan = true;
+      } else {
+        row.classList.add('hidden');
+      }
+    });
+
+    if (adaDataDitampilkan) {
+      noDataMessage?.classList.add('hidden');
+    } else {
+      noDataMessage?.classList.remove('hidden');
+    }
+  }
+
+  searchInput?.addEventListener('input', jalankanFilter);
+  komunitasSelect?.addEventListener('change', jalankanFilter);
+
+
+  // 2. LOGIKA PENGURUTAN MULTI-ARAH VIA DROPDOWN (TERBARU)
+  function urutkanTabel() {
+    const valueSorting = sortSelect.value;
+    if (!valueSorting) return; // Jika pilih default bawaan, abaikan pemrosesan lanjut
+
+    // Memecah value, contoh: "nama-asc" menjadi kriteria="nama" dan arah="asc"
+    const [kriteria, arah] = valueSorting.split('-');
+    const adalahAngka = kriteria === 'usia';
+
+    const barisTerurut = rows.sort((a, b) => {
+      const nilaiA = a.dataset[kriteria] || '';
+      const nilaiB = b.dataset[kriteria] || '';
+      
+      if (adalahAngka) {
+        const numA = parseFloat(nilaiA);
+        const numB = parseFloat(nilaiB);
+        // Jika arah 'asc' (muda ke tua/kecil ke besar), jika 'desc' (tua ke muda/besar ke kecil)
+        return arah === 'asc' ? numA - numB : numB - numA;
+      } else {
+        // Jika arah 'asc' (A-Z), jika 'desc' (Z-A)
+        return arah === 'asc' ? nilaiA.localeCompare(nilaiB) : nilaiB.localeCompare(nilaiA);
+      }
+    });
+
+    // Susun ulang baris HTML di dalam tabel body
+    tableBody!.innerHTML = '';
+    barisTerurut.forEach(row => tableBody!.appendChild(row));
+    
+    // Sinkronisasikan ulang filter pencarian setelah data diurutkan
+    jalankanFilter();
+  }
+
+  // Jalankan pengurutan setiap kali dropdown urutan berubah nilai
+  sortSelect?.addEventListener('change', urutkanTabel);
+
+
+  // 3. LOGIKA POP-UP MODAL DETAIL PROFIL
+  tableBody?.addEventListener('click', (e) => {
+    const tombolDetail = (e.target as HTMLElement).closest('.btn-detail');
+    if (!tombolDetail) return;
+
+    const row = tombolDetail.closest('.table-row-item') as HTMLElement;
+    if (!row) return;
+
+    document.getElementById('modal-nama')!.textContent = row.dataset.nama || '';
+    document.getElementById('modal-jabatan')!.textContent = row.dataset.jabatan || '';
+    document.getElementById('modal-komunitas')!.textContent = row.dataset.komunitas || '';
+    document.getElementById('modal-bergabung')!.textContent = row.dataset.bergabung || '';
+    document.getElementById('modal-bio')!.textContent = row.dataset.bio || '';
+    (document.getElementById('modal-foto') as HTMLImageElement).src = row.dataset.foto || '';
+
+    modal?.classList.remove('hidden');
+    modal?.classList.add('flex');
+  });
+
+  closeModalBtn?.addEventListener('click', () => {
+    modal?.classList.add('hidden');
+    modal?.classList.remove('flex');
+  });
+</script>
