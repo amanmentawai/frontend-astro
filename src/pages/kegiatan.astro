@@ -1,0 +1,398 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { directus, getDirectusAsset } from '../lib/directus';
+import { readItems } from '@directus/sdk';
+
+export const prerender = false;
+
+let daftarKegiatan = [];
+try {
+  daftarKegiatan = await directus.request(
+    readItems('kegiatan', {
+      fields: [
+        'id', 'judul', 'deskripsi', 'lokasi', 'tanggal_waktu', 'absensi_peserta_umum', 
+        'foto_kegiatan.directus_files_id', 
+        'daftar_kader.*',
+        'daftar_kader.kader_id.*',
+        'daftar_kader.kader_id.komunitas_id.*',
+        'daftar_kader.komunitas_id.*'
+      ],
+      sort: ['-tanggal_waktu'],
+      limit: -1
+    })
+  );
+} catch (error) {
+  console.error("Gagal mengambil data Kegiatan:", error);
+}
+
+const daftarBulan = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni", 
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+];
+---
+
+<MainLayout title="Agenda & Kegiatan | AMAN Mentawai">
+  <header class="mb-8">
+    <span class="text-xs font-bold uppercase tracking-widest text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-3">Aktivitas Komunitas</span>
+    <h1 class="text-4xl font-black text-slate-900 tracking-tight">Kegiatan & Dokumen Agenda</h1>
+  </header>
+
+  <div class="flex border-b border-slate-200 mb-6 gap-2">
+    <button id="tab-semua" class="tab-btn px-5 py-3 text-sm font-bold border-b-2 border-green-600 text-green-600 cursor-pointer transition-all" data-status="semua">
+      Semua Kegiatan
+    </button>
+    <button id="tab-akan-datang" class="tab-btn px-5 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-800 cursor-pointer transition-all" data-status="akan-datang">
+      Akan Datang
+    </button>
+    <button id="tab-selesai" class="tab-btn px-5 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-800 cursor-pointer transition-all" data-status="selesai">
+      Selesai
+    </button>
+  </div>
+
+  <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">Cari Kegiatan / Lokasi</label>
+        <input type="text" id="search-kegiatan" placeholder="Ketik kata kunci pencarian..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-500 focus:bg-white transition-all" />
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">Cari Per Bulan</label>
+        <select id="filter-bulan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 cursor-pointer font-medium focus:outline-none focus:border-green-500">
+          <option value="">Semua Bulan</option>
+          {daftarBulan.map((bulan, indeks) => (
+            <option value={indeks}>{bulan}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">Urutan Waktu</label>
+        <select id="sort-waktu" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 cursor-pointer font-medium focus:outline-none focus:border-green-500">
+          <option value="terbaru">Terbaru</option>
+          <option value="terdahulu">Terdahulu</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="grid-kegiatan" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {daftarKegiatan.map((kegiatan) => {
+      const judulAman = kegiatan.judul || 'Tanpa Judul';
+      const lokasiAman = kegiatan.lokasi || 'Lokasi Belum Ditentukan';
+      const deskripsiHtml = kegiatan.deskripsi || '<p>Tidak ada deskripsi.</p>';
+      const cuplikanTeks = deskripsiHtml.replace(/<[^>]*>?/gm, '').substring(0, 100) + '...';
+
+      // -- LOGIKA EKSTRAKSI MULTIPLE FOTO (UNTUK MODAL) --
+      const rawFoto = kegiatan.foto_kegiatan || [];
+      const arrayFotoRaw = Array.isArray(rawFoto) ? rawFoto : [rawFoto];
+      
+      const listFotoUrl = arrayFotoRaw.map((f: any) => {
+        if (!f) return null;
+        let idFoto = null;
+        
+        if (f.directus_files_id) {
+          idFoto = typeof f.directus_files_id === 'object' ? f.directus_files_id.id : f.directus_files_id;
+        } else {
+          idFoto = f.id || f;
+        }
+        
+        return idFoto ? getDirectusAsset(idFoto) : null;
+      }).filter(url => url !== null);
+
+      const fotoUtama = listFotoUrl.length > 0 ? listFotoUrl[0] : null;
+
+      let timestamp = 0;
+      let bulanIndex = -1;
+      let formatWIB = 'Waktu Belum Diatur';
+
+      if (kegiatan.tanggal_waktu) {
+        const dateObj = new Date(kegiatan.tanggal_waktu);
+        timestamp = dateObj.getTime();
+        bulanIndex = dateObj.getMonth();
+        formatWIB = dateObj.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' });
+      }
+
+      // LOGIKA PEMETAAN RELASI KADER
+      const rawKader = kegiatan.daftar_kader || [];
+      const listKaderTerlibat = rawKader.map((item: any) => {
+        const targetData = item.kader_id || item.kaders || item.kader || item; 
+        const namaKader = targetData.nama || null; 
+        
+        let namaKomunitas = 'Belum Ditentukan';
+        if (targetData.komunitas_id) {
+          if (typeof targetData.komunitas_id === 'object' && targetData.komunitas_id.nama_kampung) {
+            namaKomunitas = targetData.komunitas_id.nama_kampung;
+          } else if (typeof targetData.komunitas_id === 'string') {
+            namaKomunitas = `ID: ${targetData.komunitas_id}`;
+          }
+        }
+        return { nama: namaKader, komunitas: namaKomunitas };
+      }).filter((k: any) => k.nama !== null); 
+
+      const totalKader = listKaderTerlibat.length;
+      const pesertaUmum = parseInt(kegiatan.absensi_peserta_umum || '0', 10) || 0;
+      const totalPeserta = totalKader + pesertaUmum;
+
+      return (
+        <article 
+          class="kegiatan-card bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
+          data-judul={judulAman.toLowerCase()}
+          data-lokasi={lokasiAman.toLowerCase()}
+          data-timestamp={timestamp}
+          data-bulan={bulanIndex}
+        >
+          <div class="h-44 w-full overflow-hidden bg-slate-100 relative">
+            {fotoUtama ? (
+              <img src={fotoUtama} alt={judulAman} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            ) : (
+              <div class="w-full h-full flex flex-col items-center justify-center text-slate-300 text-xs font-medium bg-slate-100/50 border-b border-slate-200">
+                <span class="text-2xl mb-1">📷</span>
+                Tanpa Foto Dokumentasi
+              </div>
+            )}
+            
+            {listFotoUrl.length > 1 && (
+              <div class="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md">
+                + {listFotoUrl.length - 1} Foto
+              </div>
+            )}
+          </div>
+
+          <div class="p-6 flex-grow flex flex-col justify-between space-y-4">
+            <div class="space-y-2">
+              <div class="flex items-center gap-2 text-xs text-slate-400 font-semibold">
+                <span> {formatWIB} WIB</span>
+              </div>
+              <h2 class="text-lg font-bold text-slate-800 tracking-tight group-hover:text-green-600 transition-colors line-clamp-2">
+                {judulAman}
+              </h2>
+              <p class="text-slate-400 text-xs font-medium flex items-center gap-1">
+                 {lokasiAman}
+              </p>
+              <p class="text-slate-500 text-sm leading-relaxed line-clamp-2 text-justify pt-1">
+                {cuplikanTeks}
+              </p>
+            </div>
+
+            <div class="pt-3 border-t border-slate-50 flex items-center justify-between">
+              <button 
+                class="btn-detail-kegiatan text-xs font-bold text-green-600 hover:text-green-700 inline-flex items-center gap-1 cursor-pointer bg-green-50/50 hover:bg-green-50 px-3 py-2 rounded-xl transition-colors w-full justify-between"
+                data-judul={judulAman}
+                data-waktu={`${formatWIB} WIB`}
+                data-lokasi={lokasiAman}
+                data-deskripsi={encodeURIComponent(deskripsiHtml)}
+                data-umum={pesertaUmum}
+                data-kader={JSON.stringify(listKaderTerlibat)}
+                data-total={totalPeserta}
+                data-foto={JSON.stringify(listFotoUrl)} 
+              >
+                Lihat Detail Laporan <span>→</span>
+              </button>
+            </div>
+          </div>
+        </article>
+      );
+    })}
+  </div>
+
+  <div id="kegiatan-kosong" class="hidden text-center py-20 bg-white rounded-3xl border border-slate-100 text-slate-400 font-medium">
+     Tidak ada agenda kegiatan yang cocok dengan filter.
+  </div>
+
+  <div id="modal-kegiatan" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white rounded-[2rem] max-w-2xl w-full p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300">
+      <button id="close-modal-kegiatan" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 font-bold text-xl cursor-pointer bg-slate-100 w-9 h-9 rounded-full flex items-center justify-center z-10">✕</button>
+      
+      <div class="space-y-5 mt-2">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-widest text-green-600 bg-green-50 px-2.5 py-1 rounded-md inline-block mb-1">Detail Dokumen Agenda</span>
+          <h2 id="modal-judul" class="text-2xl md:text-3xl font-black text-slate-900 leading-tight"></h2>
+          <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 font-medium mt-1.5">
+            <span id="modal-waktu"></span>
+            <span id="modal-lokasi"></span>
+          </div>
+        </div>
+
+        <div id="modal-galeri-container" class="hidden mt-4 mb-2">
+          <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2.5">Dokumentasi Kegiatan:</h4>
+          <div id="modal-galeri-foto" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            </div>
+        </div>
+
+        <div id="modal-deskripsi" class="bg-slate-50 p-5 rounded-2xl border border-slate-100 text-slate-600 text-sm leading-relaxed prose prose-sm max-w-none prose-p:text-justify prose-a:text-green-600 prose-headings:text-slate-800">
+        </div>
+
+        <div class="border-t border-slate-100 pt-5">
+          <div class="flex items-center justify-between mb-4 bg-green-600 text-white px-5 py-3 rounded-xl shadow-sm">
+            <h4 class="font-bold text-sm tracking-wide">Total Partisipasi</h4>
+            <span id="modal-total-peserta" class="font-black text-lg">0 Orang</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex justify-between items-center">
+              <span class="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Masyarakat Umum</span>
+              <span id="modal-umum" class="font-bold text-slate-800 text-sm"></span>
+            </div>
+            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex justify-between items-center">
+              <span class="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Kader Penggerak</span>
+              <span id="modal-kader-count" class="font-bold text-green-700 text-sm"></span>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2.5">Daftar Kader Terlibat:</h4>
+            <div id="modal-list-kader" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</MainLayout>
+
+<script>
+  const cards = Array.from(document.querySelectorAll('.kegiatan-card')) as HTMLElement[];
+  const container = document.getElementById('grid-kegiatan');
+  const pesanKosong = document.getElementById('kegiatan-kosong');
+  
+  const searchInput = document.getElementById('search-kegiatan') as HTMLInputElement;
+  const filterBulan = document.getElementById('filter-bulan') as HTMLSelectElement;
+  const sortWaktu = document.getElementById('sort-waktu') as HTMLSelectElement;
+  const tabTombol = document.querySelectorAll('.tab-btn');
+
+  let statusAktif = 'semua';
+  const waktuSekarang = Date.now();
+
+  cards.forEach(card => {
+    const timestamp = parseInt(card.dataset.timestamp || '0', 10);
+    if (timestamp === 0) {
+      card.setAttribute('data-kondisi', 'selesai');
+    } else {
+      card.setAttribute('data-kondisi', timestamp > waktuSekarang ? 'akan-datang' : 'selesai');
+    }
+  });
+
+  function saringDanUrutkan() {
+    const kataKunci = searchInput.value.toLowerCase().trim();
+    const bulanTerpilih = filterBulan.value;
+    const aturanUrutan = sortWaktu.value;
+    let adaData = false;
+
+    cards.forEach(card => {
+      const judul = card.dataset.judul || '';
+      const lokasi = card.dataset.lokasi || '';
+      const bulan = card.dataset.bulan || '';
+      const kondisi = card.getAttribute('data-kondisi') || '';
+
+      const cocokKata = judul.includes(kataKunci) || lokasi.includes(kataKunci);
+      const cocokBulan = bulanTerpilih === '' || bulan === bulanTerpilih;
+      const cocokTab = statusAktif === 'semua' || kondisi === statusAktif;
+
+      if (cocokKata && cocokBulan && cocokTab) {
+        card.classList.remove('hidden');
+        adaData = true;
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+
+    const kartuTerurut = cards.sort((a, b) => {
+      const timeA = parseInt(a.dataset.timestamp || '0', 10);
+      const timeB = parseInt(b.dataset.timestamp || '0', 10);
+      return aturanUrutan === 'terbaru' ? timeB - timeA : timeA - timeB;
+    });
+
+    container!.innerHTML = '';
+    kartuTerurut.forEach(card => container!.appendChild(card));
+    pesanKosong?.classList.toggle('hidden', adaData);
+  }
+
+  tabTombol.forEach(tombol => {
+    tombol.addEventListener('click', (e) => {
+      tabTombol.forEach(btn => {
+        btn.classList.remove('border-green-600', 'text-green-600', 'font-bold');
+        btn.classList.add('border-transparent', 'text-slate-500', 'font-semibold');
+      });
+
+      const target = e.currentTarget as HTMLElement;
+      target.classList.remove('border-transparent', 'text-slate-500', 'font-semibold');
+      target.classList.add('border-green-600', 'text-green-600', 'font-bold');
+
+      statusAktif = target.dataset.status || 'semua';
+      saringDanUrutkan();
+    });
+  });
+
+  searchInput?.addEventListener('input', saringDanUrutkan);
+  filterBulan?.addEventListener('change', saringDanUrutkan);
+  sortWaktu?.addEventListener('change', saringDanUrutkan);
+  saringDanUrutkan();
+
+  // --- LOGIKA MODAL ---
+  const modal = document.getElementById('modal-kegiatan');
+  const closeBtn = document.getElementById('close-modal-kegiatan');
+  const detailTombol = document.querySelectorAll('.btn-detail-kegiatan');
+  
+  const listKaderBox = document.getElementById('modal-list-kader');
+  const galeriContainer = document.getElementById('modal-galeri-container');
+  const galeriBox = document.getElementById('modal-galeri-foto');
+
+  detailTombol.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLElement;
+      
+      document.getElementById('modal-judul')!.textContent = target.dataset.judul || '';
+      document.getElementById('modal-waktu')!.textContent = ` ${target.dataset.waktu}`;
+      document.getElementById('modal-lokasi')!.textContent = ` ${target.dataset.lokasi}`;
+      
+      const htmlDeskripsi = decodeURIComponent(target.dataset.deskripsi || '');
+      document.getElementById('modal-deskripsi')!.innerHTML = htmlDeskripsi;
+      
+      const totalPeserta = target.dataset.total || '0';
+      const pesertaUmum = target.dataset.umum || '0';
+      
+      document.getElementById('modal-total-peserta')!.textContent = `${totalPeserta} Orang`;
+      document.getElementById('modal-umum')!.textContent = `${pesertaUmum} Orang`;
+      
+      // Render Galeri Foto
+      const listFotoUrl = JSON.parse(target.dataset.foto || '[]');
+      galeriBox!.innerHTML = ''; 
+      
+      if (listFotoUrl.length > 0) {
+        galeriContainer?.classList.remove('hidden');
+        listFotoUrl.forEach((url: string) => {
+          const imgWrapper = document.createElement('div');
+          imgWrapper.className = "aspect-[4/3] rounded-xl overflow-hidden bg-slate-100 border border-slate-200";
+          imgWrapper.innerHTML = `<img src="${url}" loading="lazy" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />`;
+          galeriBox!.appendChild(imgWrapper);
+        });
+      } else {
+        galeriContainer?.classList.add('hidden'); 
+      }
+
+      // Render List Kader
+      const listKader = JSON.parse(target.dataset.kader || '[]');
+      document.getElementById('modal-kader-count')!.textContent = `${listKader.length} Orang`;
+      listKaderBox!.innerHTML = '';
+      if (listKader.length === 0) {
+        listKaderBox!.innerHTML = `<span class="text-xs italic text-slate-400">Tidak ada kader internal yang tercatat di agenda ini.</span>`;
+      } else {
+        listKader.forEach((kader: any) => {
+          const itemKader = document.createElement('div');
+          itemKader.className = "bg-white border border-slate-200 px-3 py-2 rounded-lg flex items-center justify-between shadow-sm";
+          itemKader.innerHTML = `
+            <span class="font-bold text-slate-700 text-xs flex items-center gap-1.5"> ${kader.nama}</span>
+            <span class="text-[10px] bg-green-50 text-green-700 px-2.5 py-1 rounded-md border border-green-100 font-bold tracking-wide">${kader.komunitas}</span>
+          `;
+          listKaderBox!.appendChild(itemKader);
+        });
+      }
+
+      modal?.classList.remove('hidden');
+      modal?.classList.add('flex');
+    });
+  });
+
+  closeBtn?.addEventListener('click', () => {
+    modal?.classList.add('hidden');
+    modal?.classList.remove('flex');
+  });
+</script>

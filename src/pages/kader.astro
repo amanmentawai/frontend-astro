@@ -1,249 +1,299 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
+import { directus } from '../lib/directus';
+import { readItems } from '@directus/sdk';
 
-// Data Lengkap Kader (Siap dihubungkan ke Directus nantinya)
-const daftarKader = [
-  { id: 1, nama: "Samangilailai", usia: 26, komunitas: "Sipora", jabatan: "Kader Pemuda Adat", bergabung: 2022, foto: "/images/hero-mentawai.jpg", bio: "Fokus pada pemetaan wilayah adat menggunakan drone dan advokasi pemuda di Sipora Utara." },
-  { id: 2, nama: "Sakerebau", usia: 34, komunitas: "Siberut", jabatan: "Penggerak Perempuan", bergabung: 2020, foto: "/images/kantor.jpg", bio: "Aktif menghidupkan kembali sekolah tenun tradisional dan kerajinan rotan untuk kemandirian ekonomi uma." },
-  { id: 3, nama: "Siritoitet", usia: 52, komunitas: "Pagai", jabatan: "Penasihat Adat", bergabung: 2018, foto: "/images/hero-mentawai.jpg", bio: "Tetua adat yang memimpin perundingan legalitas hutan adat dan penjaga tradisi Arat Sabulungan." },
-  { id: 4, nama: "Saogo", usia: 29, komunitas: "Siberut Selatan", jabatan: "Kader Pemetaan", bergabung: 2023, foto: "/images/kantor.jpg", bio: "Ahli dalam pemetaan partisipatif tata batas wilayah adat antarsuku di Siberut." },
-];
+export const prerender = false; 
 
-// Mengambil list komunitas unik untuk isi otomatis dropdown secara dinamis
-const listKomunitas = [...new Set(daftarKader.map(kader => kader.komunitas))];
+let daftarKader = [];
+
+try {
+  // 1. Ambil data dasar semua kader terlebih dahulu
+  const semuaKader = await directus.request(
+    readItems('kader', {
+      fields: ['id', 'nama', 'jenis_kelamin', 'usia', 'jabatan', 'komunitas_id.nama_kampung'],
+      sort: ['nama'],
+      limit: -1
+    })
+  );
+
+  // 2. Ambil seluruh data junction yang menghubungkan kegiatan dan kader
+  const seluruhJunction = await directus.request(
+    readItems('kegiatan_kader', {
+      fields: ['kader_id', 'kegiatan_id.*'],
+      limit: -1
+    })
+  );
+
+  // 3. Gabungkan data kegiatan ke masing-masing kader secara manual di memori
+  daftarKader = semuaKader.map(kader => {
+    // Cari kegiatan apa saja yang menyangkut ID kader ini
+    const listKegiatanMilikKader = seluruhJunction
+      .filter(junc => {
+        // Antisipasi jika kader_id berupa objek atau langsung angka ID
+        const idKaderJunction = typeof junc.kader_id === 'object' ? junc.kader_id?.id : junc.kader_id;
+        return Number(idKaderJunction) === Number(kader.id);
+      })
+      .map(junc => junc.kegiatan_id) // Ambil data objek kegiatan utamanya
+      .filter(Boolean);
+
+    return {
+      ...kader,
+      list_kegiatan: listKegiatanMilikKader
+    };
+  });
+
+} catch (error) {
+  console.error("Gagal memproses data kombinasi Kader & Kegiatan:", error);
+}
+
+const komunitasUnik = [...new Set(daftarKader
+  .filter(k => k.komunitas_id?.nama_kampung)
+  .map(k => k.komunitas_id.nama_kampung)
+)].sort();
 ---
 
-<MainLayout title="Direktori Kader | AMAN Mentawai">
-  <header class="mb-10">
-    <span class="text-xs font-bold uppercase tracking-widest text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-3">Database Internal</span>
+<MainLayout 
+  title="Direktori Kader Penggerak | AMAN Mentawai"
+  description="Daftar lengkap profil, wilayah adat, jabatan, dan rekam jejak kontribusi kegiatan seluruh kader penggerak Aliansi Masyarakat Adat Nusantara (AMAN) di Mentawai."
+>
+  <header class="mb-8">
+    <span class="text-xs font-bold uppercase tracking-widest text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-3">Sumber Daya Manusia</span>
     <h1 class="text-4xl font-black text-slate-900 tracking-tight">Direktori Kader Penggerak</h1>
-    <p class="text-slate-500 mt-2 max-w-2xl">Kelola, cari, filter, dan lihat profil lengkap para pejuang masyarakat adat yang bergerak di berbagai wilayah Kepulauan Mentawai.</p>
   </header>
 
-  <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm mb-6 space-y-4 lg:space-y-0 lg:flex lg:items-center lg:gap-4 justify-between">
-    
-    <div class="flex-grow">
-      <label for="search-nama" class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Cari Nama Kader</label>
-      <input
-        type="text"
-        id="search-nama"
-        placeholder="Ketik nama untuk mencari..."
-        class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-hidden focus:border-green-500 focus:bg-white transition-all shadow-inner"
-      />
-    </div>
+  <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      <div>
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">Cari Nama Kader</label>
+        <input
+          type="text"
+          id="search-kader"
+          placeholder="Ketik nama untuk mencari..."
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-500 focus:bg-white transition-all"
+        />
+      </div>
 
-    <div class="w-full lg:w-64">
-      <label for="filter-komunitas" class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Filter Komunitas</label>
-      <select
-        id="filter-komunitas"
-        class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-hidden focus:border-green-500 focus:bg-white transition-all cursor-pointer font-medium text-slate-700"
-      >
-        <option value=""> Semua Komunitas</option>
-        {listKomunitas.map(komunitas => (
-          <option value={komunitas}> {komunitas}</option>
-        ))}
-      </select>
-    </div>
+      <div>
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">Filter Komunitas</label>
+        <select
+          id="filter-komunitas"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 cursor-pointer font-medium focus:outline-none focus:border-green-500"
+        >
+          <option value="">Semua Komunitas</option>
+          {komunitasUnik.map(komunitas => (
+            <option value={komunitas}>{komunitas}</option>
+          ))}
+        </select>
+      </div>
 
-    <div class="w-full lg:w-64">
-      <label for="sort-data" class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Urutan Data</label>
-      <select
-        id="sort-data"
-        class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-hidden focus:border-green-500 focus:bg-white transition-all cursor-pointer font-medium text-slate-700"
-      >
-        <option value=""> Default (Bawaan)</option>
-        <option value="nama-asc"> Nama (A → Z)</option>
-        <option value="nama-desc"> Nama (Z → A)</option>
-        <option value="usia-asc"> Usia (Muda → Tua)</option>
-        <option value="usia-desc"> Usia (Tua → Muda)</option>
-      </select>
-    </div>
+      <div>
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">Urutan Data</label>
+        <select
+          id="sort-kader"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 cursor-pointer font-medium focus:outline-none focus:border-green-500"
+        >
+          <option value="default">Default (Bawaan)</option>
+          <option value="az">Nama (A ke Z)</option>
+          <option value="za">Nama (Z ke A)</option>
+          <option value="usia-muda">Usia (Termuda)</option>
+          <option value="usia-tua">Usia (Tertua)</option>
+          <option value="komunitas">Berdasarkan Komunitas</option>
+        </select>
+      </div>
 
+    </div>
   </div>
 
-  <div class="bg-white rounded-3xl border border-slate-100 shadow-xs overflow-hidden">
+  <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden mb-10">
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse">
         <thead>
-          <tr class="bg-slate-50/70 border-b border-slate-100 text-slate-600 text-sm font-bold uppercase tracking-wider">
-            <th class="p-5">Nama</th>
-            <th class="p-5">Usia</th>
-            <th class="p-5">Komunitas</th>
-            <th class="p-5">Jabatan Tugas</th>
-            <th class="p-5 text-right">Aksi</th>
+          <tr class="border-b border-slate-100 bg-slate-50/50">
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Nama</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Usia</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Komunitas</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Jabatan Tugas</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Aksi</th>
           </tr>
         </thead>
-        <tbody id="table-body">
-          {daftarKader.map((kader) => (
-            <tr 
-              class="border-b border-slate-50 hover:bg-green-50/30 transition-colors duration-200 group table-row-item"
-              data-nama={kader.nama}
-              data-usia={kader.usia}
-              data-komunitas={kader.komunitas}
-              data-foto={kader.foto}
-              data-jabatan={kader.jabatan}
-              data-bergabung={kader.bergabung}
-              data-bio={kader.bio}
-            >
-              <td class="p-5 font-semibold text-slate-800">{kader.nama}</td>
-              <td class="p-5 text-slate-600 font-medium">{kader.usia} Tahun</td>
-              <td class="p-5">
-                <span class="bg-green-50 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full border border-green-100/50">
-                  {kader.komunitas}
-                </span>
-              </td>
-              <td class="p-5 text-slate-500 font-medium">{kader.jabatan}</td>
-              <td class="p-5 text-right">
-                <button class="btn-detail bg-slate-100 text-slate-700 hover:bg-green-600 hover:text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs">
-                  Lihat Selengkapnya
-                </button>
-              </td>
-            </tr>
-          ))}
+        <tbody id="tbody-kader">
+          {daftarKader.map((kader) => {
+            const asalKomunitas = kader.komunitas_id?.nama_kampung || 'Belum Ditentukan';
+            // Mengekstrak array kegiatan milik kader tersebut
+            const listKegiatan = kader.list_kegiatan || [];
+
+            return (
+              <tr 
+                class="kader-row border-b border-slate-50 hover:bg-slate-50/70 transition-colors"
+                data-nama={kader.nama}
+                data-komunitas={asalKomunitas}
+                data-usia={kader.usia}
+              >
+                <td class="px-6 py-4.5 font-bold text-slate-900">{kader.nama}</td>
+                <td class="px-6 py-4.5 text-slate-600 text-sm">{kader.usia ? `${kader.usia} Tahun` : '-'}</td>
+                <td class="px-6 py-4.5">
+                  <span class="bg-green-50 text-green-700 text-xs font-semibold px-3 py-1 rounded-full border border-green-100/30">
+                    {asalKomunitas}
+                  </span>
+                </td>
+                <td class="px-6 py-4.5 text-slate-500 text-sm font-medium">{kader.jabatan || '-'}</td>
+                <td class="px-6 py-4.5 text-right">
+                  <button
+                    class="btn-kegiatan-kader text-xs font-bold text-green-600 hover:text-green-700 cursor-pointer bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-xl transition-colors"
+                    data-nama={kader.nama}
+                    data-kegiatan={JSON.stringify(listKegiatan)}
+                  >
+                    Lihat Kegiatan →
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
-    
-    <div id="no-data-message" class="hidden text-center py-12 text-slate-400 font-medium bg-slate-50/50">
-      🔍 Tidak ada data kader yang cocok dengan pencarian atau filter.
+
+    <div id="kader-kosong" class="hidden text-center py-16 text-slate-400 font-medium border-t border-slate-50">
+      <p>🕊️ Tidak ada data kader yang cocok dengan filter pencarian.</p>
     </div>
   </div>
 
-  <div id="profile-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-xs transition-opacity duration-300">
-    <div class="bg-white rounded-[2rem] max-w-2xl w-full p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300">
-      <button id="close-modal" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 font-bold text-xl cursor-pointer bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">✕</button>
+  <div id="modal-kegiatan" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white rounded-[2rem] max-w-md w-full p-6 shadow-2xl relative max-h-[80vh] overflow-y-auto flex flex-col">
+      <button id="close-modal-kegiatan" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center">✕</button>
       
-      <div class="grid md:grid-cols-3 gap-6 items-start mt-4">
-        <div class="md:col-span-1">
-          <img id="modal-foto" src="" alt="" class="w-full h-48 md:h-56 object-cover rounded-2xl shadow-sm border border-slate-100" />
+      <div class="space-y-4 mt-2">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-widest text-green-600 bg-green-50 px-2.5 py-1 rounded-md inline-block mb-1">Rekam Jejak</span>
+          <h2 class="text-2xl font-black text-slate-900 leading-tight">Riwayat Kegiatan</h2>
+          <p class="text-slate-400 text-xs mt-0.5 font-medium">Kader: <span id="modal-nama-kader" class="text-slate-700 font-bold"></span></p>
         </div>
-        <div class="md:col-span-2 space-y-4">
-          <div>
-            <h2 id="modal-nama" class="text-2xl font-black text-slate-900"></h2>
-            <p id="modal-jabatan" class="text-green-600 font-bold text-sm"></p>
+        
+        <div id="modal-list-kegiatan" class="space-y-2 overflow-y-auto pr-1 max-h-96">
           </div>
-          
-          <div class="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl text-xs border border-slate-100">
-            <div>
-              <span class="text-slate-400 block mb-0.5">Asal Komunitas</span>
-              <span id="modal-komunitas" class="font-bold text-slate-800 text-sm"></span>
-            </div>
-            <div>
-              <span class="text-slate-400 block mb-0.5">Tahun Bergabung</span>
-              <span id="modal-bergabung" class="font-bold text-slate-800 text-sm"></span>
-            </div>
-          </div>
-
-          <div>
-            <h4 class="font-bold text-slate-800 text-sm mb-1">Riwayat Perjuangan:</h4>
-            <p id="modal-bio" class="text-slate-600 text-sm leading-relaxed text-justify"></p>
-          </div>
-        </div>
       </div>
     </div>
   </div>
 </MainLayout>
 
 <script>
-  const searchInput = document.getElementById('search-nama') as HTMLInputElement;
-  const komunitasSelect = document.getElementById('filter-komunitas') as HTMLSelectElement;
-  const sortSelect = document.getElementById('sort-data') as HTMLSelectElement;
-  const tableBody = document.getElementById('table-body');
-  const noDataMessage = document.getElementById('no-data-message');
-  const modal = document.getElementById('profile-modal');
-  const closeModalBtn = document.getElementById('close-modal');
+  const searchInput = document.getElementById('search-kader') as HTMLInputElement;
+  const filterKomunitas = document.getElementById('filter-komunitas') as HTMLSelectElement;
+  const sortSelect = document.getElementById('sort-kader') as HTMLSelectElement;
+  const tbody = document.getElementById('tbody-kader');
+  const pesanKosong = document.getElementById('kader-kosong');
   
-  let rows = Array.from(document.querySelectorAll('.table-row-item')) as HTMLElement[];
+  // Variabel untuk modal pop-up
+  const modal = document.getElementById('modal-kegiatan');
+  const closeModalBtn = document.getElementById('close-modal-kegiatan');
+  const listKegiatanContainer = document.getElementById('modal-list-kegiatan');
+  const modalNamaKader = document.getElementById('modal-nama-kader');
+  
+  let rows = Array.from(document.querySelectorAll('.kader-row')) as HTMLElement[];
 
-  // 1. LOGIKA FILTER GABUNGAN (Nama & Komunitas)
-  function jalankanFilter() {
-    const nilaiCari = searchInput.value.toLowerCase().trim();
-    const nilaiKomunitas = komunitasSelect.value;
-    let adaDataDitampilkan = false;
+  function filterKader() {
+    const kataKunci = searchInput.value.toLowerCase().trim();
+    const komunitasTerpilih = filterKomunitas.value;
+    let adaData = false;
 
     rows.forEach(row => {
-      const namaKader = (row.dataset.nama || '').toLowerCase();
-      const komunitasKader = row.dataset.komunitas || '';
+      const nama = (row.dataset.nama || '').toLowerCase();
+      const komunitas = row.dataset.komunitas || '';
 
-      const cocokNama = namaKader.includes(nilaiCari);
-      const cocokKomunitas = nilaiKomunitas === '' || komunitasKader === nilaiKomunitas;
+      const cocokKata = nama.includes(kataKunci);
+      const cocokKomunitas = komunitasTerpilih === '' || komunitas === komunitasTerpilih;
 
-      if (cocokNama && cocokKomunitas) {
+      if (cocokKata && cocokKomunitas) {
         row.classList.remove('hidden');
-        adaDataDitampilkan = true;
+        adaData = true;
       } else {
         row.classList.add('hidden');
       }
     });
 
-    if (adaDataDitampilkan) {
-      noDataMessage?.classList.add('hidden');
-    } else {
-      noDataMessage?.classList.remove('hidden');
-    }
+    pesanKosong?.classList.toggle('hidden', adaData);
   }
 
-  searchInput?.addEventListener('input', jalankanFilter);
-  komunitasSelect?.addEventListener('change', jalankanFilter);
+  function urutkanKader() {
+    const aturanUrutan = sortSelect.value;
 
+    const rowsTerurut = rows.sort((a, b) => {
+      const namaA = (a.dataset.nama || '').toLowerCase();
+      const namaB = (b.dataset.nama || '').toLowerCase();
+      const usiaA = parseInt(a.dataset.usia || '0', 10);
+      const usiaB = parseInt(b.dataset.usia || '0', 10);
+      const komA = (a.dataset.komunitas || '').toLowerCase();
+      const komB = (b.dataset.komunitas || '').toLowerCase();
 
-  // 2. LOGIKA PENGURUTAN MULTI-ARAH VIA DROPDOWN (TERBARU)
-  function urutkanTabel() {
-    const valueSorting = sortSelect.value;
-    if (!valueSorting) return; // Jika pilih default bawaan, abaikan pemrosesan lanjut
-
-    // Memecah value, contoh: "nama-asc" menjadi kriteria="nama" dan arah="asc"
-    const [kriteria, arah] = valueSorting.split('-');
-    const adalahAngka = kriteria === 'usia';
-
-    const barisTerurut = rows.sort((a, b) => {
-      const nilaiA = a.dataset[kriteria] || '';
-      const nilaiB = b.dataset[kriteria] || '';
-      
-      if (adalahAngka) {
-        const numA = parseFloat(nilaiA);
-        const numB = parseFloat(nilaiB);
-        // Jika arah 'asc' (muda ke tua/kecil ke besar), jika 'desc' (tua ke muda/besar ke kecil)
-        return arah === 'asc' ? numA - numB : numB - numA;
-      } else {
-        // Jika arah 'asc' (A-Z), jika 'desc' (Z-A)
-        return arah === 'asc' ? nilaiA.localeCompare(nilaiB) : nilaiB.localeCompare(nilaiA);
+      switch (aturanUrutan) {
+        case 'az': return namaA.localeCompare(namaB);
+        case 'za': return namaB.localeCompare(namaA);
+        case 'usia-muda': return (isNaN(usiaA) ? 999 : usiaA) - (isNaN(usiaB) ? 999 : usiaB);
+        case 'usia-tua': return (isNaN(usiaB) ? -1 : usiaB) - (isNaN(usiaA) ? -1 : usiaA);
+        case 'komunitas': return komA.localeCompare(komB);
+        default: return 0;
       }
     });
 
-    // Susun ulang baris HTML di dalam tabel body
-    tableBody!.innerHTML = '';
-    barisTerurut.forEach(row => tableBody!.appendChild(row));
-    
-    // Sinkronisasikan ulang filter pencarian setelah data diurutkan
-    jalankanFilter();
+    tbody!.innerHTML = '';
+    rowsTerurut.forEach(row => tbody!.appendChild(row));
+    filterKader();
   }
 
-  // Jalankan pengurutan setiap kali dropdown urutan berubah nilai
-  sortSelect?.addEventListener('change', urutkanTabel);
+  // 🟢 LOGIK POP-UP MODAL (Menggunakan Event Delegation agar tetap berfungsi walau data di-sort/di-filter)
+  tbody?.addEventListener('click', (e) => {
+    const target = (e.target as HTMLElement).closest('.btn-kegiatan-kader') as HTMLElement | null;
+    if (!target) return;
 
+    // Pasang nama kader di header modal
+    if (modalNamaKader) modalNamaKader.textContent = target.dataset.nama || '';
+    
+    // Ambil data array kegiatan dari data-attribute HTML
+    const listKegiatan = JSON.parse(target.dataset.kegiatan || '[]');
+    if (listKegiatanContainer) listKegiatanContainer.innerHTML = '';
 
-  // 3. LOGIKA POP-UP MODAL DETAIL PROFIL
-  tableBody?.addEventListener('click', (e) => {
-    const tombolDetail = (e.target as HTMLElement).closest('.btn-detail');
-    if (!tombolDetail) return;
+    if (listKegiatan.length === 0) {
+      listKegiatanContainer!.innerHTML = `
+        <div class="text-center py-8 text-xs text-slate-400 font-medium italic bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          🌱 Kader ini belum terdaftar di kegiatan manapun saat ini.
+        </div>`;
+    } else {
+      listKegiatan.forEach((keg: any) => {
+        const itemKegiatan = document.createElement('div');
+        itemKegiatan.className = "p-3.5 bg-slate-50 hover:bg-slate-100/80 rounded-2xl border border-slate-100 transition-colors text-left";
+        
+        const opsiTanggal: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+        const tanggalFormat = keg.tanggal_waktu ? new Date(keg.tanggal_waktu).toLocaleDateString('id-ID', opsiTanggal) : 'Tanggal tidak diset';
 
-    const row = tombolDetail.closest('.table-row-item') as HTMLElement;
-    if (!row) return;
+        itemKegiatan.innerHTML = `
+          <p class="font-bold text-slate-800 text-sm"> ${keg.judul || 'Kegiatan Tanpa Judul'}</p>
+          <p class="text-[11px] text-slate-400 font-medium mt-1"> ${tanggalFormat}</p>
+        `;
+        listKegiatanContainer?.appendChild(itemKegiatan);
+      });
+    }
 
-    document.getElementById('modal-nama')!.textContent = row.dataset.nama || '';
-    document.getElementById('modal-jabatan')!.textContent = row.dataset.jabatan || '';
-    document.getElementById('modal-komunitas')!.textContent = row.dataset.komunitas || '';
-    document.getElementById('modal-bergabung')!.textContent = row.dataset.bergabung || '';
-    document.getElementById('modal-bio')!.textContent = row.dataset.bio || '';
-    (document.getElementById('modal-foto') as HTMLImageElement).src = row.dataset.foto || '';
-
+    // Tampilkan Modal
     modal?.classList.remove('hidden');
     modal?.classList.add('flex');
   });
 
+  // Event Listener untuk menutup modal
   closeModalBtn?.addEventListener('click', () => {
     modal?.classList.add('hidden');
     modal?.classList.remove('flex');
   });
+
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal?.classList.add('hidden');
+      modal?.classList.remove('flex');
+    }
+  });
+
+  searchInput?.addEventListener('input', filterKader);
+  filterKomunitas?.addEventListener('change', filterKader);
+  sortSelect?.addEventListener('change', urutkanKader);
 </script>

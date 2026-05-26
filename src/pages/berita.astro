@@ -1,0 +1,442 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { directus, getDirectusAsset } from '../lib/directus';
+import { readItems } from '@directus/sdk';
+
+export const prerender = false;
+
+let daftarBerita = [];
+try {
+  daftarBerita = await directus.request(
+    readItems('artikel_berita', {
+      fields: ['id', 'judul', 'status', 'tanggal_publikasi', 'gambar_utama', 'konten', 'link_eksternal'],
+      filter: {
+        status: {
+          _eq: 'published'
+        }
+      },
+      sort: ['-tanggal_publikasi'],
+      limit: -1
+    })
+  );
+} catch (error) {
+  console.error("Gagal mengambil data Berita:", error);
+}
+---
+
+<MainLayout title="Berita & Publikasi | AMAN Mentawai">
+  <header class="mb-8">
+    <span class="text-xs font-bold uppercase tracking-widest text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-3">Pusat Informasi</span>
+    <h1 class="text-4xl font-black text-slate-900 tracking-tight">Kabar & Publikasi</h1>
+    <p class="text-slate-500 mt-2 max-w-2xl">Ikuti berita terbaru, siaran pers, dan informasi terkini seputar pergerakan masyarakat adat di Mentawai.</p>
+  </header>
+
+  <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">Cari Judul Berita</label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-4 flex items-center text-slate-400"></span>
+          <input
+            type="text"
+            id="search-berita"
+            placeholder="Ketik kata kunci berita..."
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-green-500 focus:bg-white transition-all"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">Urutan Waktu Publikasi</label>
+        <select
+          id="sort-berita"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 cursor-pointer font-medium focus:outline-none focus:border-green-500"
+        >
+          <option value="terbaru">Terbaru Terlebih Dahulu</option>
+          <option value="terlama">Terlama Terlebih Dahulu</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="grid-berita" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {daftarBerita.map((berita) => {
+      const judulAman = berita.judul || 'Tanpa Judul';
+      
+      let urlFoto = null;
+      if (berita.gambar_utama) {
+        const fotoId = typeof berita.gambar_utama === 'object' ? berita.gambar_utama.id : berita.gambar_utama;
+        urlFoto = getDirectusAsset(fotoId);
+      }
+
+      let timestamp = 0;
+      let formatWaktu = 'Waktu tidak diketahui';
+      if (berita.tanggal_publikasi) {
+        const dateObj = new Date(berita.tanggal_publikasi);
+        timestamp = dateObj.getTime();
+        formatWaktu = dateObj.toLocaleDateString('id-ID', {
+          timeZone: 'Asia/Jakarta',
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
+
+      const kontenHtml = berita.konten || '<p>Tidak ada konten.</p>';
+      const cuplikanTeks = kontenHtml.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...';
+
+      return (
+        <article 
+          class="berita-card bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
+          data-judul={judulAman.toLowerCase()}
+          data-timestamp={timestamp}
+        >
+          <div class="h-48 w-full overflow-hidden bg-slate-100 relative">
+            {urlFoto ? (
+              <img src={urlFoto} alt={judulAman} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            ) : (
+              <div class="w-full h-full flex flex-col items-center justify-center text-slate-300 text-xs font-medium bg-slate-100/50">
+                <span class="text-3xl mb-2">📰</span>
+                Tanpa Gambar
+              </div>
+            )}
+            <div class="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">
+              {formatWaktu}
+            </div>
+          </div>
+
+          <div class="p-6 flex-grow flex flex-col justify-between space-y-4">
+            <div class="space-y-3">
+              <h2 class="text-xl font-bold text-slate-800 tracking-tight group-hover:text-green-600 transition-colors leading-snug line-clamp-2">
+                {judulAman}
+              </h2>
+              <p class="text-slate-500 text-sm leading-relaxed line-clamp-3 text-justify">
+                {cuplikanTeks}
+              </p>
+            </div>
+
+            <div class="pt-4 border-t border-slate-50">
+              <button 
+                class="btn-baca-berita text-xs font-bold text-green-600 hover:text-green-700 inline-flex items-center justify-center gap-1 cursor-pointer bg-green-50/50 hover:bg-green-50 px-4 py-2.5 rounded-xl transition-colors w-full"
+                data-judul={judulAman}
+                data-waktu={formatWaktu}
+                data-gambar={urlFoto || ''}
+                data-konten={encodeURIComponent(kontenHtml)}
+                data-link={berita.link_eksternal || ''}
+              >
+                Baca Selengkapnya
+              </button>
+            </div>
+          </div>
+        </article>
+      );
+    })}
+  </div>
+
+  <div id="berita-kosong" class="hidden text-center py-20 bg-white rounded-3xl border border-slate-100 text-slate-400 font-medium mt-6">
+    Tidak ada berita yang cocok dengan pencarian.
+  </div>
+
+  <div id="modal-berita" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-opacity duration-300">
+    <div class="bg-white rounded-[2rem] max-w-3xl w-full shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-300">
+      
+      <div class="flex items-center justify-between p-5 md:p-6 border-b border-slate-100 bg-white z-10">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-green-600 bg-green-50 px-3 py-1 rounded-full">Artikel Berita</span>
+        <button id="close-modal-berita" class="text-slate-400 hover:text-slate-700 font-bold text-xl cursor-pointer bg-slate-100 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition-colors">✕</button>
+      </div>
+
+      <div class="p-6 md:p-8 overflow-y-auto">
+        <h2 id="modal-judul-berita" class="text-2xl md:text-4xl font-black text-slate-900 leading-tight mb-4"></h2>
+        <div class="flex items-center gap-2 text-sm font-medium text-slate-400 mb-6">
+          <span id="modal-waktu-berita"></span>
+        </div>
+
+        <div id="modal-wadah-gambar" class="w-full rounded-2xl overflow-hidden mb-8 border border-slate-100 bg-slate-50 hidden group relative cursor-pointer">
+          <img id="modal-gambar-berita" src="" alt="" class="w-full h-auto max-h-[300px] object-cover transition-transform duration-500 group-hover:scale-105" />
+          
+          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <span class="bg-white/20 backdrop-blur-md text-white font-bold px-5 py-2.5 rounded-full flex items-center gap-2 shadow-lg">
+              Klik untuk memperbesar
+            </span>
+          </div>
+        </div>
+
+        <div id="modal-konten-berita" class="format-berita">
+        </div>
+
+        <div id="wadah-link-eksternal" class="mt-8 pt-6 border-t border-slate-100 hidden">
+          <a id="modal-link-eksternal" href="#" target="_blank" class="inline-flex items-center justify-center gap-2 w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold px-6 py-3 rounded-xl transition-colors">
+            Kunjungi Sumber Artikel/Link Terkait
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="modal-zoom" class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/95 backdrop-blur-sm transition-opacity">
+    <button id="close-zoom" class="absolute top-6 right-6 text-white/70 hover:text-white text-4xl focus:outline-none z-[120] transition-colors w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full">&times;</button>
+    
+    <div id="zoom-container" class="w-full h-full flex items-center justify-center overflow-auto p-4 relative">
+      <img id="gambar-zoom" src="" alt="Zoomed" class="max-w-full max-h-full object-contain transition-transform duration-300 origin-center" style="transform: scale(1);" />
+    </div>
+
+    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-white/10 px-6 py-3 rounded-full backdrop-blur-md border border-white/20 z-[120] shadow-2xl">
+      <button id="btn-zoom-out" class="text-white hover:text-green-400 text-3xl font-bold focus:outline-none w-10 h-10 flex items-center justify-center transition-colors">&minus;</button>
+      <span class="text-white/80 text-sm font-bold px-2 w-16 text-center" id="zoom-level">100%</span>
+      <button id="btn-zoom-in" class="text-white hover:text-green-400 text-3xl font-bold focus:outline-none w-10 h-10 flex items-center justify-center transition-colors">&plus;</button>
+    </div>
+  </div>
+</MainLayout>
+
+<style is:global>
+  .format-berita {
+    color: #334155; 
+    font-size: 1rem;
+    line-height: 1.625;
+  }
+  
+  .format-berita h1 {
+    font-size: 1.875rem; 
+    font-weight: 900; 
+    color: #0f172a; 
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    line-height: 1.25;
+  }
+  .format-berita h2 {
+    font-size: 1.5rem; 
+    font-weight: 700;
+    color: #1e293b;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    line-height: 1.375;
+  }
+  .format-berita h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .format-berita h4, .format-berita h5, .format-berita h6 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .format-berita p {
+    margin-bottom: 1.25rem;
+    text-align: justify;
+  }
+  .format-berita b, .format-berita strong {
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .format-berita i, .format-berita em {
+    font-style: italic;
+  }
+  .format-berita u {
+    text-decoration: underline;
+    text-decoration-color: #cbd5e1;
+    text-underline-offset: 2px;
+  }
+
+  .format-berita ul {
+    list-style-type: disc;
+    list-style-position: outside;
+    padding-left: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .format-berita ol {
+    list-style-type: decimal;
+    list-style-position: outside;
+    padding-left: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .format-berita li {
+    padding-left: 0.25rem;
+    margin-bottom: 0.375rem;
+  }
+
+  .format-berita a {
+    color: #16a34a; 
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.2s ease-in-out;
+  }
+  .format-berita a:hover {
+    color: #15803d;
+  }
+
+  .format-berita img {
+    border-radius: 0.75rem;
+    width: 100%;
+    height: auto;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  .format-berita blockquote {
+    border-left: 4px solid #22c55e; 
+    background-color: rgba(240, 253, 244, 0.5); 
+    padding: 0.75rem 0.5rem 0.75rem 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+    color: #475569;
+    border-top-right-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+  }
+</style>
+
+<script>
+  // PENCARIAN & FILTER
+  const cards = Array.from(document.querySelectorAll('.berita-card')) as HTMLElement[];
+  const container = document.getElementById('grid-berita');
+  const pesanKosong = document.getElementById('berita-kosong');
+  
+  const searchInput = document.getElementById('search-berita') as HTMLInputElement;
+  const sortSelect = document.getElementById('sort-berita') as HTMLSelectElement;
+
+  function filterDanUrutkan() {
+    const kataKunci = searchInput.value.toLowerCase().trim();
+    const urutan = sortSelect.value;
+    let adaData = false;
+
+    cards.forEach(card => {
+      const judul = card.dataset.judul || '';
+      
+      if (judul.includes(kataKunci)) {
+        card.classList.remove('hidden');
+        adaData = true;
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+
+    const kartuTerurut = cards.sort((a, b) => {
+      const timeA = parseInt(a.dataset.timestamp || '0', 10);
+      const timeB = parseInt(b.dataset.timestamp || '0', 10);
+      return urutan === 'terbaru' ? timeB - timeA : timeA - timeB;
+    });
+
+    container!.innerHTML = '';
+    kartuTerurut.forEach(card => container!.appendChild(card));
+    pesanKosong?.classList.toggle('hidden', adaData);
+  }
+
+  searchInput?.addEventListener('input', filterDanUrutkan);
+  sortSelect?.addEventListener('change', filterDanUrutkan);
+
+  // LOGIKA MODAL BERITA
+  const modal = document.getElementById('modal-berita');
+  const closeBtn = document.getElementById('close-modal-berita');
+  const tombolBaca = document.querySelectorAll('.btn-baca-berita');
+
+  tombolBaca.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLElement;
+      
+      document.getElementById('modal-judul-berita')!.textContent = target.dataset.judul || '';
+      document.getElementById('modal-waktu-berita')!.textContent = ` ${target.dataset.waktu}`;
+      
+      const urlGambar = target.dataset.gambar;
+      const wadahGambar = document.getElementById('modal-wadah-gambar');
+      const elemenGambar = document.getElementById('modal-gambar-berita') as HTMLImageElement;
+      
+      if (urlGambar && urlGambar !== '') {
+        elemenGambar.src = urlGambar;
+        wadahGambar?.classList.remove('hidden');
+      } else {
+        elemenGambar.src = '';
+        wadahGambar?.classList.add('hidden');
+      }
+
+      const htmlKonten = decodeURIComponent(target.dataset.konten || '');
+      document.getElementById('modal-konten-berita')!.innerHTML = htmlKonten;
+
+      const linkEks = target.dataset.link;
+      const wadahLink = document.getElementById('wadah-link-eksternal');
+      const tombolLink = document.getElementById('modal-link-eksternal') as HTMLAnchorElement;
+
+      if (linkEks && linkEks !== '') {
+        tombolLink.href = linkEks;
+        wadahLink?.classList.remove('hidden');
+      } else {
+        tombolLink.href = '#';
+        wadahLink?.classList.add('hidden');
+      }
+
+      modal?.classList.remove('hidden');
+      modal?.classList.add('flex');
+    });
+  });
+
+  closeBtn?.addEventListener('click', () => {
+    modal?.classList.add('hidden');
+    modal?.classList.remove('flex');
+  });
+
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal?.classList.add('hidden');
+      modal?.classList.remove('flex');
+    }
+  });
+
+  // LOGIKA ZOOM GAMBAR
+  const wadahGambarBerita = document.getElementById('modal-wadah-gambar');
+  const gambarBerita = document.getElementById('modal-gambar-berita') as HTMLImageElement;
+  const modalZoom = document.getElementById('modal-zoom');
+  const gambarZoom = document.getElementById('gambar-zoom') as HTMLImageElement;
+  const closeZoom = document.getElementById('close-zoom');
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const txtZoomLevel = document.getElementById('zoom-level');
+
+  let currentScale = 1;
+
+  function setZoom() {
+    gambarZoom.style.transform = `scale(${currentScale})`;
+    txtZoomLevel!.textContent = `${Math.round(currentScale * 100)}%`;
+  }
+
+  // Buka Modal Zoom ketika gambar di-klik
+  wadahGambarBerita?.addEventListener('click', () => {
+    if (!gambarBerita.src) return;
+    gambarZoom.src = gambarBerita.src;
+    currentScale = 1;
+    setZoom();
+    modalZoom?.classList.remove('hidden');
+    modalZoom?.classList.add('flex');
+  });
+
+  // Tutup Modal Zoom
+  closeZoom?.addEventListener('click', () => {
+    modalZoom?.classList.add('hidden');
+    modalZoom?.classList.remove('flex');
+  });
+
+  // Tombol Perbesar
+  btnZoomIn?.addEventListener('click', () => {
+    if (currentScale < 3) {
+      currentScale += 0.25;
+      setZoom();
+    }
+  });
+
+  // Tombol Perkecil
+  btnZoomOut?.addEventListener('click', () => {
+    if (currentScale > 0.5) {
+      currentScale -= 0.25;
+      setZoom();
+    }
+  });
+</script>

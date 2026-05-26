@@ -1,63 +1,166 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
+import { directus, getDirectusAsset } from '../lib/directus';
+import { readItems } from '@directus/sdk';
 
-const daftarKomunitas = [
-  {
-    nama: "Komunitas Adat Uma Siberut",
-    wilayah: "Siberut Selatan",
-    img: "/images/hero-mentawai.jpg",
-    slug: "uma-siberut"
-  },
-  {
-    nama: "Komunitas Sipora Jaya",
-    wilayah: "Sipora Utara",
-    img: "/images/kantor.jpg",
-    slug: "sipora-jaya"
-  },
-  {
-    nama: "Komunitas Pagai Selatan",
-    wilayah: "Pagai Selatan",
-    img: "/images/hero-mentawai.jpg",
-    slug: "pagai-selatan"
-  }
-];
+export const prerender = false;
+
+let komunitasWithKader = [];
+
+try {
+  const daftarKomunitas = await directus.request(
+    readItems('komunitas', {
+      fields: ['id', 'nama_kampung', 'deskripsi', 'foto'],
+      sort: ['nama_kampung'],
+    })
+  );
+
+  const daftarKader = await directus.request(
+    readItems('kader', {
+      fields: ['id', 'nama', 'jenis_kelamin', 'usia', 'jabatan', 'komunitas_id'],
+    })
+  );
+
+  komunitasWithKader = daftarKomunitas.map(komunitas => {
+    const kaderMilikKomunitas = daftarKader.filter(kader => {
+      const idKomunitasDiKader = typeof kader.komunitas_id === 'object' ? kader.komunitas_id?.id : kader.komunitas_id;
+      return String(idKomunitasDiKader) === String(komunitas.id);
+    });
+
+    return {
+      ...komunitas,
+      kader: kaderMilikKomunitas,
+      totalKader: kaderMilikKomunitas.length
+    };
+  });
+
+} catch (error) {
+  console.error("Gagal sinkronisasi data:", error);
+}
 ---
 
-<MainLayout title="Daftar Komunitas Adat | AMAN Mentawai">
-  <header class="mb-12">
-    <h1 class="text-4xl font-black text-slate-900 mb-4">Daftar Komunitas Adat</h1>
-    <p class="text-lg text-slate-600 max-w-2xl leading-relaxed">
-      Berikut adalah persebaran komunitas adat di Kepulauan Mentawai yang berada di bawah naungan pendampingan AMAN Wilayah Mentawai.
-    </p>
+<MainLayout title="Wilayah Komunitas Adat | AMAN Mentawai">
+  <header class="mb-10">
+    <span class="text-xs font-bold uppercase tracking-widest text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-3">Peta Perjuangan</span>
+    <h1 class="text-4xl font-black text-slate-900 tracking-tight">Komunitas Adat Mentawai</h1>
+    <p class="text-slate-500 mt-2 max-w-2xl">Daftar wilayah dan profil komunitas adat yang teguh menjaga ruang hidup dan tradisi leluhur di bumi Sikerei.</p>
   </header>
 
-  <div class="grid md:grid-cols-3 gap-8">
-    {daftarKomunitas.map((item) => (
-      <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 group">
-        <div class="h-56 overflow-hidden">
-          <img src={item.img} alt={item.nama} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {komunitasWithKader.map((komunitas) => (
+      <article class="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+        <div class="h-48 w-full overflow-hidden bg-slate-100 relative">
+          <div class="absolute top-4 left-4 z-10">
+            <span class="bg-green-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-full shadow-md">
+              {komunitas.totalKader} Kader
+            </span>
+          </div>
+          <img src={getDirectusAsset(komunitas.foto)} alt={komunitas.nama_kampung} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         </div>
-        <div class="p-6">
-          <span class="text-xs font-bold text-green-600 uppercase tracking-widest">{item.wilayah}</span>
-          <h3 class="text-xl font-bold text-slate-800 mt-2 mb-4">{item.nama}</h3>
-          <p class="text-slate-500 text-sm mb-6 line-clamp-2">
-            Masyarakat adat yang menjunjung tinggi kearifan lokal Arat Sabulungan dan perlindungan hutan adat Uma.
-          </p>
-          <a href={`/komunitas/${item.slug}`} class="block text-center bg-slate-50 hover:bg-green-600 hover:text-white text-green-700 font-bold py-3 rounded-2xl transition-colors">
-            Lihat Profil Komunitas
-          </a>
+
+        <div class="p-6 flex-grow flex flex-col justify-between space-y-4">
+          <div class="space-y-2">
+            <h2 class="text-xl font-bold text-slate-800 tracking-tight group-hover:text-green-600 transition-colors">{komunitas.nama_kampung}</h2>
+            <p class="text-slate-500 text-sm leading-relaxed line-clamp-2 text-justify">{komunitas.deskripsi}</p>
+          </div>
+          <div class="pt-2 border-t border-slate-50">
+            <button
+              class="btn-detail-komunitas w-full text-left inline-flex items-center justify-between text-xs font-bold text-green-600 hover:text-green-700 cursor-pointer"
+              data-nama={komunitas.nama_kampung}
+              data-deskripsi={komunitas.deskripsi}
+              data-foto={getDirectusAsset(komunitas.foto)}
+              data-total={komunitas.totalKader}
+              data-kader={JSON.stringify(komunitas.kader)}
+            >
+              Lihat Detail Komunitas <span>→</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </article>
     ))}
   </div>
 
-  <section class="mt-20 bg-green-50 rounded-[2.5rem] p-8 md:p-16 text-center border border-green-100">
-    <h2 class="text-3xl font-bold text-green-900 mb-4">Ingin Komunitasmu Terdaftar?</h2>
-    <p class="text-green-700 max-w-xl mx-auto mb-8">
-      Kami membantu proses pemetaan wilayah adat dan advokasi hukum bagi komunitas adat di seluruh Kepulauan Mentawai.
-    </p>
-    <a href="mailto:info@amanmentawai.or.id" class="bg-green-700 text-white px-8 py-4 rounded-full font-bold hover:bg-green-800 transition-all inline-block">
-      Hubungi Pendamping Kami
-    </a>
-  </section>
+  <div id="modal-komunitas" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white rounded-[2rem] max-w-3xl w-full p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <button id="close-modal" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 font-bold text-xl cursor-pointer bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center z-10">✕</button>
+      
+      <div class="grid md:grid-cols-2 gap-8 items-start mt-2">
+        <div>
+          <img id="modal-foto" src="" alt="" class="w-full h-56 md:h-80 object-cover rounded-2xl border border-slate-100" />
+        </div>
+        
+        <div class="space-y-5">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Profil Wilayah</span>
+            <h2 id="modal-nama" class="text-3xl font-black text-slate-900 leading-tight"></h2>
+          </div>
+          
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            <p id="modal-deskripsi" class="text-slate-600 text-sm leading-relaxed text-justify"></p>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+              <h4 class="font-bold text-slate-800 text-sm">Kader Penggerak</h4>
+              <span class="bg-green-50 text-green-700 text-xs font-bold px-2.5 py-1 rounded-lg"><span id="modal-total-kader">0</span> Orang</span>
+            </div>
+            
+            <div id="modal-list-kader" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </MainLayout>
+
+<script>
+  const modal = document.getElementById('modal-komunitas');
+  const closeModalBtn = document.getElementById('close-modal');
+  const tombolDetail = document.querySelectorAll('.btn-detail-komunitas');
+  const listKaderContainer = document.getElementById('modal-list-kader');
+
+  tombolDetail.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLElement;
+      
+      document.getElementById('modal-nama')!.textContent = target.dataset.nama || '';
+      document.getElementById('modal-deskripsi')!.textContent = target.dataset.deskripsi || '';
+      document.getElementById('modal-total-kader')!.textContent = target.dataset.total || '0';
+      (document.getElementById('modal-foto') as HTMLImageElement).src = target.dataset.foto || '';
+
+      const listKader = JSON.parse(target.dataset.kader || '[]');
+      listKaderContainer!.innerHTML = '';
+
+      if (listKader.length === 0) {
+        listKaderContainer!.innerHTML = `
+          <div class="text-center py-6 text-xs text-slate-400 font-medium italic bg-slate-50 rounded-xl border border-dashed border-slate-200">
+             Belum ada kader terdaftar dari komunitas ini.
+          </div>`;
+      } else {
+        listKader.forEach((kader: any) => {
+          const itemKader = document.createElement('div');
+          itemKader.className = "flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-100/50 transition-colors";
+          
+          itemKader.innerHTML = `
+            <div>
+              <p class="font-bold text-slate-800 text-sm"> ${kader.nama}</p>
+              <p class="text-[11px] text-green-600 font-semibold mt-0.5"> ${kader.jabatan || 'Kader Penggerak'}</p>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-medium text-slate-500 bg-white px-2 py-1 rounded-md border border-slate-200">
+                ${kader.usia} Thn
+              </span>
+            </div>`;
+          listKaderContainer!.appendChild(itemKader);
+        });
+      }
+
+      modal?.classList.remove('hidden');
+      modal?.classList.add('flex');
+    });
+  });
+
+  closeModalBtn?.addEventListener('click', () => {
+    modal?.classList.add('hidden');
+  });
+</script>

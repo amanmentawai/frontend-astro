@@ -1,5 +1,72 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
+import { directus } from '../lib/directus';
+import { readItems } from '@directus/sdk';
+
+export const prerender = false;
+
+// 1. Variabel Penampung
+let totalKader = "50+";
+let totalKomunitas = "10+";
+let kegiatanTerbaru = [];
+let semuaTestimoni = [];
+let testimoniTerbaru = [];
+
+// 2. Ambil Total Kader
+try {
+  const dataKader = await directus.request(readItems('kader', { fields: ['id'], limit: -1 }));
+  if (dataKader) totalKader = dataKader.length;
+} catch (error) {
+  console.error("Gagal mengambil data Kader:", error.message);
+}
+
+// 3. Ambil Total Komunitas
+try {
+  const dataKomunitas = await directus.request(readItems('komunitas', { fields: ['id'], limit: -1 }));
+  if (dataKomunitas) totalKomunitas = dataKomunitas.length;
+} catch (error) {
+  console.error("Gagal mengambil data Komunitas:", error.message);
+}
+
+// 4. Ambil 3 Kegiatan Terbaru
+try {
+  const dataKegiatan = await directus.request(readItems('kegiatan', {
+    fields: ['id', 'judul', 'tanggal_waktu', 'deskripsi'],
+    limit: 3
+  }));
+  if (dataKegiatan && dataKegiatan.length > 0) {
+    kegiatanTerbaru = dataKegiatan;
+  }
+} catch (error) {
+  console.error("Gagal mengambil data Kegiatan:", error.message);
+}
+
+// 5. Ambil Data Suara Masyarakat (DENGAN SORTING TERBARU)
+try {
+  const dataTestimoni = await directus.request(readItems('suara_masyarakat', {
+    fields: ['id', 'nama', 'peran', 'kutipan'],
+    sort: ['-id'], 
+    limit: -1 
+  }));
+  
+  if (dataTestimoni && dataTestimoni.length > 0) {
+    semuaTestimoni = dataTestimoni;
+    testimoniTerbaru = dataTestimoni.slice(0, 3);
+  }
+} catch (error) {
+  console.error("Gagal mengambil data Suara Masyarakat:", error.message);
+}
+
+// === DATA DUMMY ===
+const fallbackKegiatan = [
+  { judul: "Belum Ada Kegiatan", deskripsi: "<p>Data kegiatan belum tersedia dari database.</p>" }
+];
+const fallbackTestimoni = [
+  { nama: "Belum Ada Data", peran: "Sistem", kutipan: "Harap isi collection suara_masyarakat di Directus." }
+];
+
+const kegiatanDitampilkan = kegiatanTerbaru.length > 0 ? kegiatanTerbaru : fallbackKegiatan;
+const testimoniDitampilkan = testimoniTerbaru.length > 0 ? testimoniTerbaru : fallbackTestimoni;
 ---
 
 <MainLayout title="Beranda | AMAN Mentawai">
@@ -63,7 +130,7 @@ import MainLayout from '../layouts/MainLayout.astro';
         <p class="text-slate-500 text-sm mb-6">Generasi muda dan tokoh adat yang dilatih untuk memimpin pergerakan di tingkat komunitas.</p>
       </div>
       <div class="flex items-center justify-between border-t border-slate-50 pt-4">
-        <span class="text-3xl font-black text-green-700">50+ <span class="text-sm font-medium text-slate-400">Jiwa</span></span>
+        <span class="text-3xl font-black text-green-700">{totalKader} <span class="text-sm font-medium text-slate-400">Jiwa</span></span>
         <a href="/kader" class="text-sm font-bold text-green-600 hover:text-green-700 inline-flex items-center gap-1 group">
           Detail Kader <span class="group-hover:translate-x-1 transition-transform">→</span>
         </a>
@@ -77,7 +144,7 @@ import MainLayout from '../layouts/MainLayout.astro';
         <p class="text-slate-500 text-sm mb-6">Wilayah persebaran komunitas adat Mentawai yang telah terpetakan dan berdaulat.</p>
       </div>
       <div class="flex items-center justify-between border-t border-slate-50 pt-4">
-        <span class="text-3xl font-black text-green-700">10+ <span class="text-sm font-medium text-slate-400">Wilayah</span></span>
+        <span class="text-3xl font-black text-green-700">{totalKomunitas} <span class="text-sm font-medium text-slate-400">Wilayah</span></span>
         <a href="/komunitas" class="text-sm font-bold text-green-600 hover:text-green-700 inline-flex items-center gap-1 group">
           Jelajahi <span class="group-hover:translate-x-1 transition-transform">→</span>
         </a>
@@ -114,38 +181,20 @@ import MainLayout from '../layouts/MainLayout.astro';
     </div>
 
     <div class="grid md:grid-cols-3 gap-8">
-      <div class="flex flex-col justify-between h-full bg-slate-50 p-6 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg hover:border-green-100 transition-all">
-        <div>
-          <span class="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-4">Pemetaan Adat</span>
-          <h3 class="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-green-700 transition-colors">Pemetaan Partisipatif Wilayah Adat di Saureinu</h3>
-          <p class="text-slate-500 text-sm mb-4 line-clamp-3">Melakukan pelacakan tata batas wilayah adat bersama para tetua adat guna pendaftaran wilayah hukum adat ke pemerintah daerah.</p>
+      {kegiatanDitampilkan.map((kegiatan) => (
+        <div class="flex flex-col justify-between h-full bg-slate-50 p-6 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg hover:border-green-100 transition-all">
+          <div>
+            <span class="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-4">Kegiatan</span>
+            <h3 class="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-green-700 transition-colors">
+              {kegiatan.judul}
+            </h3>
+            <div class="text-slate-500 text-sm mb-4 line-clamp-3" set:html={kegiatan.deskripsi}></div>
+          </div>
+          <a href="/kegiatan" class="text-sm font-bold text-green-600 hover:underline inline-flex items-center gap-1 mt-4">
+            Lihat Detail <span>→</span>
+          </a>
         </div>
-        <a href="/kegiatan/pemetaan-partisipatif-siberut" class="text-sm font-bold text-green-600 hover:underline inline-flex items-center gap-1 mt-4">
-          Baca Selengkapnya <span>→</span>
-        </a>
-      </div>
-
-      <div class="flex flex-col justify-between h-full bg-slate-50 p-6 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg hover:border-green-100 transition-all">
-        <div>
-          <span class="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-4">Sekolah Adat</span>
-          <h3 class="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-green-700 transition-colors">Sekolah Adat: Belajar Arat Sabulungan untuk Pemuda</h3>
-          <p class="text-slate-500 text-sm mb-4 line-clamp-3">Mengajarkan kembali nilai-nilai luhur kepercayaan tradisi, seni pembuatan tato, pengobatan herbal obat tradisional Sikerei.</p>
-        </div>
-        <a href="/kegiatan/sekolah-adat-silaoinan" class="text-sm font-bold text-green-600 hover:underline inline-flex items-center gap-1 mt-4">
-          Baca Selengkapnya <span>→</span>
-        </a>
-      </div>
-
-      <div class="flex flex-col justify-between h-full bg-slate-50 p-6 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg hover:border-green-100 transition-all">
-        <div>
-          <span class="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block mb-4">Pemberdayaan</span>
-          <h3 class="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-green-700 transition-colors">Pelatihan Pembuatan Kerajinan Rotan Ekonomis bagi Ibu-Ibu</h3>
-          <p class="text-slate-500 text-sm mb-4 line-clamp-3">Mendorong kemandirian ekonomi keluarga melalui pemanfaatan hasil hutan non-kayu berupa kerajinan tangan bernilai jual tinggi.</p>
-        </div>
-        <a href="/kegiatan/pelatihan-kerajinan-rotan" class="text-sm font-bold text-green-600 hover:underline inline-flex items-center gap-1 mt-4">
-          Baca Selengkapnya <span>→</span>
-        </a>
-      </div>
+      ))}
     </div>
   </section>
 
@@ -156,49 +205,95 @@ import MainLayout from '../layouts/MainLayout.astro';
     </div>
 
     <div class="grid md:grid-cols-3 gap-8">
-      <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
-        <span class="text-6xl text-slate-100 font-serif absolute top-4 left-4 pointer-events-none">“</span>
-        <p class="text-slate-600 italic relative z-10 mb-6">
-          "Dengan adanya pendampingan pemetaan wilayah adat dari AMAN, batas tanah suku kami sekarang jadi jelas dan terlindungi secara hukum dari klaim sepihak pihak luar."
-        </p>
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white font-bold text-sm">A</div>
-          <div>
-            <h4 class="font-bold text-slate-800 text-sm">Sababalat</h4>
-            <p class="text-xs text-slate-400">Kepala Suku / Tetua Adat Saureinu</p>
+      {testimoniDitampilkan.map((testimoni) => {
+        const inisial = testimoni.nama ? testimoni.nama.charAt(0).toUpperCase() : "A";
+        return (
+          <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
+            <span class="text-6xl text-slate-100 font-serif absolute top-4 left-4 pointer-events-none">“</span>
+            <div class="text-slate-600 italic relative z-10 mb-6 line-clamp-4" set:html={testimoni.kutipan}></div>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                {inisial}
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-800 text-sm">{testimoni.nama}</h4>
+                <p class="text-xs text-slate-400">{testimoni.peran}</p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        );
+      })}
+    </div>
 
-      <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
-        <span class="text-6xl text-slate-100 font-serif absolute top-4 left-4 pointer-events-none">“</span>
-        <p class="text-slate-600 italic relative z-10 mb-6">
-          "Melalui sekolah adat yang didirikan AMAN, anak-anak kami tidak lagi malu mempraktikkan budaya Mentawai. Mereka bangga menjadi bagian dari generasi Sikerei."
-        </p>
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white font-bold text-sm">B</div>
-          <div>
-            <h4 class="font-bold text-slate-800 text-sm">Sakerebau</h4>
-            <p class="text-xs text-slate-400">Ibu Rumah Tangga / Pengrajin</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative">
-        <span class="text-6xl text-slate-100 font-serif absolute top-4 left-4 pointer-events-none">“</span>
-        <p class="text-slate-600 italic relative z-10 mb-6">
-          "Saya belajar banyak tentang advokasi hukum dan kepemimpinan di pelatihan kader AMAN. Kini saya siap pulang untuk membangun kampung halaman saya sendiri."
-        </p>
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white font-bold text-sm">S</div>
-          <div>
-            <h4 class="font-bold text-slate-800 text-sm">Siritoitet</h4>
-            <p class="text-xs text-slate-400">Kader Muda Komunitas Sipora</p>
-          </div>
-        </div>
-      </div>
+    <div class="mt-10 flex justify-center">
+      <button id="btn-buka-testimoni" class="bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 px-8 py-3 rounded-full font-bold text-sm transition-colors flex items-center gap-2 shadow-sm">
+        <span>💬</span> Lihat Semua Kutipan
+      </button>
     </div>
   </section>
 
-  
+  <div id="modal-testimoni" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-opacity duration-300">
+    <div class="bg-white rounded-[2rem] max-w-4xl w-full shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden">
+      
+      <div class="flex items-center justify-between p-6 border-b border-slate-100 bg-white z-10 shadow-sm">
+        <div>
+          <h2 class="text-2xl font-black text-slate-900">Kumpulan Suara Masyarakat</h2>
+          <p class="text-sm text-slate-500">Mendengar langsung dari tapak pergerakan</p>
+        </div>
+        <button id="btn-tutup-testimoni" class="text-slate-400 hover:text-slate-700 font-bold text-xl cursor-pointer bg-slate-100 hover:bg-slate-200 w-10 h-10 rounded-full flex items-center justify-center transition-colors">✕</button>
+      </div>
+
+      <div class="p-6 md:p-8 overflow-y-auto flex-grow bg-slate-50">
+        <div class="grid md:grid-cols-2 gap-6">
+          {semuaTestimoni.length > 0 ? (
+            semuaTestimoni.map((testimoni) => {
+              const inisial = testimoni.nama ? testimoni.nama.charAt(0).toUpperCase() : "A";
+              return (
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative hover:shadow-md transition-shadow">
+                  <span class="text-5xl text-slate-100 font-serif absolute top-2 left-4 pointer-events-none">“</span>
+                  <div class="text-slate-600 italic relative z-10 mb-6 text-sm leading-relaxed" set:html={testimoni.kutipan}></div>
+                  <div class="flex items-center gap-3 mt-auto">
+                    <div class="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                      {inisial}
+                    </div>
+                    <div>
+                      <h4 class="font-bold text-slate-800 text-sm">{testimoni.nama}</h4>
+                      <p class="text-xs text-slate-400">{testimoni.peran}</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          ) : (
+             <div class="col-span-2 text-center text-slate-400 py-10">
+               Belum ada data testimoni lainnya.
+             </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
 </MainLayout>
+
+<script>
+  const modalTestimoni = document.getElementById('modal-testimoni');
+  const btnBuka = document.getElementById('btn-buka-testimoni');
+  const btnTutup = document.getElementById('btn-tutup-testimoni');
+
+  btnBuka?.addEventListener('click', () => {
+    modalTestimoni?.classList.remove('hidden');
+    modalTestimoni?.classList.add('flex');
+  });
+
+  btnTutup?.addEventListener('click', () => {
+    modalTestimoni?.classList.add('hidden');
+    modalTestimoni?.classList.remove('flex');
+  });
+
+  modalTestimoni?.addEventListener('click', (e) => {
+    if (e.target === modalTestimoni) {
+      modalTestimoni?.classList.add('hidden');
+      modalTestimoni?.classList.remove('flex');
+    }
+  });
+</script>
