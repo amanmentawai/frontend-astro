@@ -3,10 +3,9 @@ import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
 
-// Menerima data SEO secara dinamis dari setiap halaman
 const { 
   title = "AMAN Mentawai - Aliansi Masyarakat Adat Nusantara", 
-  description = "Wadah perjuangan masyarakat adat di Bumi Sikerei untuk menjaga ruang hidup, tradisi, dan hukum adat leluhur Mentawai.",
+  description = "Wadah perjuangan masyarakat adat di Kabupaten Kepulauan Mentawai untuk menjaga ruang hidup, tradisi, dan hukum adat leluhur Mentawai.",
   image = "/logo.png", 
   canonicalUrl = Astro.url.href
 } = Astro.props;

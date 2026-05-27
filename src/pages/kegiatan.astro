@@ -131,6 +131,10 @@ const daftarBulan = [
       const totalKader = listKaderTerlibat.length;
       const pesertaUmum = parseInt(kegiatan.absensi_peserta_umum || '0', 10) || 0;
       const totalPeserta = totalKader + pesertaUmum;
+      console.log("Peserta umum RAW:", kegiatan.absensi_peserta_umum);
+      console.log("Peserta umum parsed:", pesertaUmum);
+      console.log("Total kader:", totalKader);
+      console.log("Total peserta:", totalPeserta);
 
       return (
         <article 
