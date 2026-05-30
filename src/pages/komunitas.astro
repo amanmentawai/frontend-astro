@@ -85,8 +85,13 @@ try {
       <button id="close-modal" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 font-bold text-xl cursor-pointer bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center z-10">✕</button>
       
       <div class="grid md:grid-cols-2 gap-8 items-start mt-2">
-        <div>
-          <img id="modal-foto" src="" alt="" class="w-full h-56 md:h-80 object-cover rounded-2xl border border-slate-100" />
+        <div id="wrapper-modal-foto" class="relative group cursor-pointer rounded-2xl overflow-hidden border border-slate-100 h-56 md:h-80 w-full">
+          <img id="modal-foto" src="" alt="" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <span class="bg-white/20 backdrop-blur-md text-white font-bold px-4 py-2 rounded-full flex items-center shadow-lg text-xs gap-2">
+              Klik Perbesar
+            </span>
+          </div>
         </div>
         
         <div class="space-y-5">
@@ -111,10 +116,25 @@ try {
       </div>
     </div>
   </div>
+
+  <div id="modal-zoom" class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/95 backdrop-blur-sm transition-opacity">
+    <button id="close-zoom" class="absolute top-6 right-6 text-white/70 hover:text-white text-4xl focus:outline-none z-[120] transition-colors w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full">&times;</button>
+    
+    <div id="zoom-container" class="w-full h-full flex items-center justify-center overflow-auto p-4 relative">
+      <img id="gambar-zoom" src="" alt="Zoomed" class="max-w-full max-h-full object-contain transition-transform duration-300 origin-center" style="transform: scale(1);" />
+    </div>
+
+    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-white/10 px-6 py-3 rounded-full backdrop-blur-md border border-white/20 z-[120] shadow-2xl">
+      <button id="btn-zoom-out" class="text-white hover:text-green-400 text-3xl font-bold focus:outline-none w-10 h-10 flex items-center justify-center transition-colors">&minus;</button>
+      <span class="text-white/80 text-sm font-bold px-2 w-16 text-center" id="zoom-level">100%</span>
+      <button id="btn-zoom-in" class="text-white hover:text-green-400 text-3xl font-bold focus:outline-none w-10 h-10 flex items-center justify-center transition-colors">&plus;</button>
+    </div>
+  </div>
 </MainLayout>
 
 <script>
-  const modal = document.getElementById('modal-komunitas');
+  // --- LOGIKA MODAL DETAIL KOMUNITAS ---
+  const modalDetail = document.getElementById('modal-komunitas');
   const closeModalBtn = document.getElementById('close-modal');
   const tombolDetail = document.querySelectorAll('.btn-detail-komunitas');
   const listKaderContainer = document.getElementById('modal-list-kader');
@@ -155,12 +175,75 @@ try {
         });
       }
 
-      modal?.classList.remove('hidden');
-      modal?.classList.add('flex');
+      modalDetail?.classList.remove('hidden');
+      modalDetail?.classList.add('flex');
     });
   });
 
   closeModalBtn?.addEventListener('click', () => {
-    modal?.classList.add('hidden');
+    modalDetail?.classList.add('hidden');
+    modalDetail?.classList.remove('flex');
+  });
+
+  modalDetail?.addEventListener('click', (e) => {
+    if (e.target === modalDetail) {
+      modalDetail?.classList.add('hidden');
+      modalDetail?.classList.remove('flex');
+    }
+  });
+
+
+  // --- LOGIKA ZOOM GAMBAR ---
+  const wrapperModalFoto = document.getElementById('wrapper-modal-foto');
+  const modalFoto = document.getElementById('modal-foto') as HTMLImageElement;
+  const modalZoom = document.getElementById('modal-zoom');
+  const gambarZoom = document.getElementById('gambar-zoom') as HTMLImageElement;
+  const closeZoom = document.getElementById('close-zoom');
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const txtZoomLevel = document.getElementById('zoom-level');
+
+  let currentScale = 1;
+
+  function setZoom() {
+    if (gambarZoom) gambarZoom.style.transform = `scale(${currentScale})`;
+    if (txtZoomLevel) txtZoomLevel.textContent = `${Math.round(currentScale * 100)}%`;
+  }
+
+  wrapperModalFoto?.addEventListener('click', () => {
+    if (!modalFoto.src) return;
+    gambarZoom.src = modalFoto.src;
+    currentScale = 1;
+    setZoom();
+    modalZoom?.classList.remove('hidden');
+    modalZoom?.classList.add('flex');
+  });
+
+  closeZoom?.addEventListener('click', () => {
+    modalZoom?.classList.add('hidden');
+    modalZoom?.classList.remove('flex');
+  });
+
+  modalZoom?.addEventListener('click', (e) => {
+    if (e.target === modalZoom || e.target === document.getElementById('zoom-container')) {
+      modalZoom?.classList.add('hidden');
+      modalZoom?.classList.remove('flex');
+    }
+  });
+
+  btnZoomIn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (currentScale < 3) {
+      currentScale += 0.25;
+      setZoom();
+    }
+  });
+
+  btnZoomOut?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (currentScale > 0.5) {
+      currentScale -= 0.25;
+      setZoom();
+    }
   });
 </script>

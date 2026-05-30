@@ -57,24 +57,24 @@ const daftarBulan = [
     </h1>
   </header>
 
-  <div class="flex border-b border-slate-200 mb-6 gap-2">
+  <div class="flex border-b border-slate-200 mb-6 gap-2 overflow-x-auto">
     <button
       id="tab-semua"
-      class="tab-btn px-5 py-3 text-sm font-bold border-b-2 border-green-600 text-green-600 cursor-pointer transition-all"
+      class="tab-btn px-5 py-3 text-sm font-bold border-b-2 border-green-600 text-green-600 cursor-pointer transition-all whitespace-nowrap"
       data-status="semua"
     >
       Semua Kegiatan
     </button>
     <button
       id="tab-akan-datang"
-      class="tab-btn px-5 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-800 cursor-pointer transition-all"
+      class="tab-btn px-5 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-800 cursor-pointer transition-all whitespace-nowrap"
       data-status="akan-datang"
     >
       Akan Datang
     </button>
     <button
       id="tab-selesai"
-      class="tab-btn px-5 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-800 cursor-pointer transition-all"
+      class="tab-btn px-5 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-800 cursor-pointer transition-all whitespace-nowrap"
       data-status="selesai"
     >
       Selesai
@@ -141,7 +141,7 @@ const daftarBulan = [
         const cuplikanTeks =
           deskripsiHtml.replace(/<[^>]*>?/gm, "").substring(0, 100) + "...";
 
-        // -- LOGIKA EKSTRAKSI MULTIPLE FOTO (UNTUK MODAL) --
+        // -- LOGIKA EKSTRAKSI MULTIPLE FOTO --
         const rawFoto = kegiatan.foto_kegiatan || [];
         const arrayFotoRaw = Array.isArray(rawFoto) ? rawFoto : [rawFoto];
 
@@ -207,16 +207,11 @@ const daftarBulan = [
 
         // RELASI peserta umum
         const rawPesertaUmum = kegiatan.absensi_peserta_umum || [];
-
-        // pastikan array
         const listPesertaUmum = Array.isArray(rawPesertaUmum)
           ? rawPesertaUmum
           : [rawPesertaUmum];
 
-        // hitung jumlah peserta umum
         const pesertaUmum = listPesertaUmum.length;
-
-        // total keseluruhan
         const totalPeserta = totalKader + pesertaUmum;
 
         return (
@@ -335,7 +330,7 @@ const daftarBulan = [
             id="modal-galeri-foto"
             class="grid grid-cols-2 sm:grid-cols-3 gap-3"
           >
-          </div>
+            </div>
         </div>
 
         <div
@@ -394,6 +389,21 @@ const daftarBulan = [
       </div>
     </div>
   </div>
+
+  <div id="modal-zoom" class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/95 backdrop-blur-sm transition-opacity">
+    <button id="close-zoom" class="absolute top-6 right-6 text-white/70 hover:text-white text-4xl focus:outline-none z-[120] transition-colors w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full">&times;</button>
+    
+    <div id="zoom-container" class="w-full h-full flex items-center justify-center overflow-auto p-4 relative">
+      <img id="gambar-zoom" src="" alt="Zoomed" class="max-w-full max-h-full object-contain transition-transform duration-300 origin-center" style="transform: scale(1);" />
+    </div>
+
+    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-white/10 px-6 py-3 rounded-full backdrop-blur-md border border-white/20 z-[120] shadow-2xl">
+      <button id="btn-zoom-out" class="text-white hover:text-green-400 text-3xl font-bold focus:outline-none w-10 h-10 flex items-center justify-center transition-colors">&minus;</button>
+      <span class="text-white/80 text-sm font-bold px-2 w-16 text-center" id="zoom-level">100%</span>
+      <button id="btn-zoom-in" class="text-white hover:text-green-400 text-3xl font-bold focus:outline-none w-10 h-10 flex items-center justify-center transition-colors">&plus;</button>
+    </div>
+  </div>
+
 </MainLayout>
 
 <script>
@@ -491,7 +501,59 @@ const daftarBulan = [
   sortWaktu?.addEventListener("change", saringDanUrutkan);
   saringDanUrutkan();
 
-  // --- LOGIKA MODAL ---
+  // --- LOGIKA ZOOM GAMBAR ---
+  const modalZoom = document.getElementById('modal-zoom');
+  const gambarZoom = document.getElementById('gambar-zoom') as HTMLImageElement;
+  const closeZoom = document.getElementById('close-zoom');
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const txtZoomLevel = document.getElementById('zoom-level');
+  let currentScale = 1;
+
+  function setZoom() {
+    if (gambarZoom) gambarZoom.style.transform = `scale(${currentScale})`;
+    if (txtZoomLevel) txtZoomLevel.textContent = `${Math.round(currentScale * 100)}%`;
+  }
+
+  function openZoom(src: string) {
+    if (!src) return;
+    gambarZoom.src = src;
+    currentScale = 1;
+    setZoom();
+    modalZoom?.classList.remove('hidden');
+    modalZoom?.classList.add('flex');
+  }
+
+  closeZoom?.addEventListener('click', () => {
+    modalZoom?.classList.add('hidden');
+    modalZoom?.classList.remove('flex');
+  });
+
+  modalZoom?.addEventListener('click', (e) => {
+    if (e.target === modalZoom || e.target === document.getElementById('zoom-container')) {
+      modalZoom?.classList.add('hidden');
+      modalZoom?.classList.remove('flex');
+    }
+  });
+
+  btnZoomIn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (currentScale < 3) {
+      currentScale += 0.25;
+      setZoom();
+    }
+  });
+
+  btnZoomOut?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (currentScale > 0.5) {
+      currentScale -= 0.25;
+      setZoom();
+    }
+  });
+
+
+  // --- LOGIKA MODAL DETAIL ---
   const modal = document.getElementById("modal-kegiatan");
   const closeBtn = document.getElementById("close-modal-kegiatan");
   const detailTombol = document.querySelectorAll(".btn-detail-kegiatan");
@@ -522,7 +584,6 @@ const daftarBulan = [
       document.getElementById("modal-umum")!.textContent =
         `${pesertaUmum} Orang`;
 
-      // Render Galeri Foto
       const listFotoUrl = JSON.parse(target.dataset.foto || "[]");
       galeriBox!.innerHTML = "";
 
@@ -531,8 +592,21 @@ const daftarBulan = [
         listFotoUrl.forEach((url: string) => {
           const imgWrapper = document.createElement("div");
           imgWrapper.className =
-            "aspect-[4/3] rounded-xl overflow-hidden bg-slate-100 border border-slate-200";
-          imgWrapper.innerHTML = `<img src="${url}" loading="lazy" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />`;
+            "relative group aspect-[4/3] rounded-xl overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer";
+          
+          imgWrapper.innerHTML = `
+            <img src="${url}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+              <span class="bg-white/20 backdrop-blur-md text-white font-bold px-3 py-1.5 rounded-full flex items-center shadow-lg text-[10px] gap-1">
+              Perbesar
+              </span>
+            </div>
+          `;
+
+          imgWrapper.addEventListener('click', () => {
+             openZoom(url);
+          });
+
           galeriBox!.appendChild(imgWrapper);
         });
       } else {
@@ -567,5 +641,12 @@ const daftarBulan = [
   closeBtn?.addEventListener("click", () => {
     modal?.classList.add("hidden");
     modal?.classList.remove("flex");
+  });
+
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal?.classList.add('hidden');
+      modal?.classList.remove('flex');
+    }
   });
 </script>
