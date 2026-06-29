@@ -28,6 +28,22 @@ const {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={image} />
+
+    <script 
+      type="text/partytown" 
+      is:inline 
+      src="https://www.googletagmanager.com/gtag/js?id=G-7D5MD3P4G1"
+    ></script>
+    <script type="text/partytown" is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag('js', new Date());
+
+      // Konfigurasi GA4 (Ganti dengan ID Pengukuran aslimu)
+      gtag('config', 'G-7D5MD3P4G1');
+    </script>
   </head>
   <body class="bg-slate-50 min-h-screen font-sans text-slate-800">
     <Navbar />
